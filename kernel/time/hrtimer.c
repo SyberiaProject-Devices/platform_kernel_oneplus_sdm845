@@ -1777,7 +1777,7 @@ int hrtimers_prepare_cpu(unsigned int cpu)
 	return 0;
 }
 
-#ifdef CONFIG_HOTPLUG_CPU
+#if defined(CONFIG_HOTPLUG_CPU) || defined(CONFIG_CPUSETS)
 static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
 				 struct hrtimer_clock_base *new_base,
 				 bool remove_pinned)
@@ -1786,7 +1786,6 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
 	struct timerqueue_node *node;
 	struct timerqueue_head pinned;
 	int is_pinned;
-	bool is_hotplug = !cpu_online(old_base->cpu_base->cpu);
 
 	timerqueue_init_head(&pinned);
 
@@ -1826,7 +1825,7 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
 		timer = container_of(node, struct hrtimer, node);
 
 		timerqueue_del(&pinned, &timer->node);
-		enqueue_hrtimer(timer, old_base);
+		enqueue_hrtimer(timer, old_base, HRTIMER_MODE_ABS);
 	}
 }
 
@@ -1836,16 +1835,13 @@ static void __migrate_hrtimers(unsigned int scpu, bool remove_pinned)
 	unsigned long flags;
 	int i;
 
-	BUG_ON(cpu_online(scpu));
-	tick_cancel_sched_timer(scpu);
-
 	/*
 	 * this BH disable ensures that raise_softirq_irqoff() does
 	 * not wakeup ksoftirqd (and acquire the pi-lock) while
 	 * holding the cpu_base lock
 	 */
 	local_bh_disable();
-	local_irq_disable();
+	local_irq_save(flags);
 	old_base = &per_cpu(hrtimer_bases, scpu);
 	new_base = this_cpu_ptr(&hrtimer_bases);
 	/*
@@ -1871,17 +1867,28 @@ static void __migrate_hrtimers(unsigned int scpu, bool remove_pinned)
 
 	/* Check, if we got expired work to do */
 	__hrtimer_peek_ahead_timers();
-	local_irq_enable();
+	local_irq_restore(flags);
 	local_bh_enable();
+}
+#endif /* CONFIG_HOTPLUG_CPU || CONFIG_CPUSETS */
+
+#ifdef CONFIG_HOTPLUG_CPU
+int hrtimers_dead_cpu(unsigned int scpu)
+{
+	BUG_ON(cpu_online(scpu));
+	tick_cancel_sched_timer(scpu);
+
+	__migrate_hrtimers(scpu, true);
 	return 0;
 }
+#endif /* CONFIG_HOTPLUG_CPU */
 
+#ifdef CONFIG_CPUSETS
 void hrtimer_quiesce_cpu(void *cpup)
 {
 	__migrate_hrtimers(*(int *)cpup, false);
 }
-
-#endif /* CONFIG_HOTPLUG_CPU */
+#endif /* CONFIG_CPUSETS */
 
 void __init hrtimers_init(void)
 {
