@@ -685,6 +685,7 @@ compress_again:
 				__GFP_KSWAPD_RECLAIM |
 				__GFP_NOWARN |
 				__GFP_HIGHMEM |
+				__GFP_MOVABLE |
 				__GFP_CMA);
 	if (!handle) {
 		zcomp_stream_put(zram->comp);
@@ -694,7 +695,7 @@ compress_again:
 
 		handle = zs_malloc(meta->mem_pool, clen,
 				GFP_NOIO | __GFP_HIGHMEM |
-				__GFP_CMA);
+				__GFP_MOVABLE | __GFP_CMA);
 		if (handle)
 			goto compress_again;
 
