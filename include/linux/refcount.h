@@ -4,6 +4,7 @@
 #include <linux/atomic.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
+#include <linux/kernel.h>
 
 /**
  * refcount_t - variant of atomic_t specialized for reference counts
