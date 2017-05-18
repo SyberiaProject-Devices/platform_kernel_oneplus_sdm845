@@ -1731,7 +1731,6 @@ static __latent_entropy void run_timer_softirq(struct softirq_action *h)
 
 	__run_timers(base);
 	if (IS_ENABLED(CONFIG_NO_HZ_COMMON)) {
-		__run_timers(&timer_base_deferrable);
 		__run_timers(this_cpu_ptr(&timer_bases[BASE_DEF]));
 
 	if ((atomic_cmpxchg(&deferrable_pending, 1, 0) &&
@@ -1739,6 +1738,11 @@ static __latent_entropy void run_timer_softirq(struct softirq_action *h)
 		tick_do_timer_cpu == smp_processor_id())
 		__run_timers(&timer_base_deferrable);
 	}
+
+	if ((atomic_cmpxchg(&deferrable_pending, 1, 0) &&
+		tick_do_timer_cpu == TICK_DO_TIMER_NONE) ||
+		tick_do_timer_cpu == smp_processor_id())
+		__run_timers(&timer_base_deferrable);
 }
 
 /*
