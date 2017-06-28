@@ -3270,6 +3270,15 @@ bool same_thread_group(struct task_struct *p1, struct task_struct *p2)
 	return p1->signal == p2->signal;
 }
 
+#ifdef CONFIG_RT_SOFTINT_OPTIMIZATION
+extern bool cpupri_check_rt(void);
+#else
+static inline bool cpupri_check_rt(void)
+{
+	return false;
+}
+#endif
+
 static inline struct task_struct *next_thread(const struct task_struct *p)
 {
 	return list_entry_rcu(p->thread_group.next,
