@@ -677,6 +677,21 @@ struct task_cputime_t {
 	unsigned long long sum_exec_runtime;
 };
 
+enum vtime_state {
+	/* Task is sleeping or running in a CPU with VTIME inactive: */
+	VTIME_INACTIVE = 0,
+	/* Task runs in userspace in a CPU with VTIME active: */
+	VTIME_USER,
+	/* Task runs in kernelspace in a CPU with VTIME active: */
+	VTIME_SYS,
+};
+
+struct vtime {
+	seqcount_t		seqcount;
+	unsigned long long	starttime;
+	enum vtime_state	state;
+};
+
 /* Alternate field names when used to cache expirations. */
 #define virt_exp	utime
 #define prof_exp	stime
@@ -2022,16 +2037,7 @@ struct task_struct {
 #endif
 	struct prev_cputime prev_cputime;
 #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-	seqcount_t vtime_seqcount;
-	unsigned long long vtime_starttime;
-	enum {
-		/* Task is sleeping or running in a CPU with VTIME inactive */
-		VTIME_INACTIVE = 0,
-		/* Task runs in userspace in a CPU with VTIME active */
-		VTIME_USER,
-		/* Task runs in kernelspace in a CPU with VTIME active */
-		VTIME_SYS,
-	} vtime_state;
+	struct vtime			vtime;
 #endif
 
 #ifdef CONFIG_NO_HZ_FULL
