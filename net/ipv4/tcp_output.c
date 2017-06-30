@@ -875,7 +875,7 @@ void tcp_wfree(struct sk_buff *skb)
 	/* Keep one reference on sk_wmem_alloc.
 	 * Will be released by sk_free() from here or tcp_tasklet_func()
 	 */
-	wmem = atomic_sub_return(skb->truesize - 1, &sk->sk_wmem_alloc);
+	WARN_ON(refcount_sub_and_test(skb->truesize - 1, &sk->sk_wmem_alloc));
 
 	/* If this softirq is serviced by ksoftirqd, we are likely under stress.
 	 * Wait until our queues (qdisc + devices) are drained.
@@ -884,7 +884,7 @@ void tcp_wfree(struct sk_buff *skb)
 	 * - chance for incoming ACK (processed by another cpu maybe)
 	 *   to migrate this flow (skb->ooo_okay will be eventually set)
 	 */
-	if (wmem >= SKB_TRUESIZE(1) && this_cpu_ksoftirqd() == current)
+	if (refcount_read(&sk->sk_wmem_alloc) >= SKB_TRUESIZE(1) && this_cpu_ksoftirqd() == current)
 		goto out;
 
 	if (test_and_clear_bit(TSQ_THROTTLED, &sk->sk_tsq_flags) &&
@@ -925,7 +925,7 @@ enum hrtimer_restart tcp_pace_kick(struct hrtimer *timer)
 		if (nval != oval)
 			continue;
 
-		if (!atomic_inc_not_zero(&sk->sk_wmem_alloc))
+		if (!refcount_inc_not_zero(&sk->sk_wmem_alloc))
 			break;
 		/* queue this socket to tasklet queue */
 		tsq = this_cpu_ptr(&tsq_tasklet);
@@ -1024,7 +1024,7 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	skb->sk = sk;
 	skb->destructor = skb_is_tcp_pure_ack(skb) ? __sock_wfree : tcp_wfree;
 	skb_set_hash_from_sk(skb, sk);
-	atomic_add(skb->truesize, &sk->sk_wmem_alloc);
+	refcount_add(skb->truesize, &sk->sk_wmem_alloc);
 
 	/* Build TCP header and checksum it. */
 	th = (struct tcphdr *)skb->data;
@@ -2196,14 +2196,14 @@ static bool tcp_small_queue_check(struct sock *sk, const struct sk_buff *skb,
 	limit = min_t(u32, limit, sysctl_tcp_limit_output_bytes);
 	limit <<= factor;
 
-	if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+	if (refcount_read(&sk->sk_wmem_alloc) > limit) {
 		set_bit(TSQ_THROTTLED, &sk->sk_tsq_flags);
 		/* It is possible TX completion already happened
 		 * before we set TSQ_THROTTLED, so we must
 		 * test again the condition.
 		 */
 		smp_mb__after_atomic();
-		if (atomic_read(&sk->sk_wmem_alloc) > limit)
+		if (refcount_read(&sk->sk_wmem_alloc) > limit)
 			return true;
 	}
 	return false;
@@ -2792,7 +2792,7 @@ int __tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb, int segs)
 	/* Do not sent more than we queued. 1/4 is reserved for possible
 	 * copying overhead: fragmentation, tunneling, mangling etc.
 	 */
-	if (atomic_read(&sk->sk_wmem_alloc) >
+	if (refcount_read(&sk->sk_wmem_alloc) >
 	    min_t(u32, sk->sk_wmem_queued + (sk->sk_wmem_queued >> 2),
 		  sk->sk_sndbuf))
 		return -EAGAIN;

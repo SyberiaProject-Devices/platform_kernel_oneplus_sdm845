@@ -396,7 +396,7 @@ static void sctp_packet_set_owner_w(struct sk_buff *skb, struct sock *sk)
 	 * therefore only reserve a single byte to keep socket around until
 	 * the packet has been transmitted.
 	 */
-	atomic_inc(&sk->sk_wmem_alloc);
+	refcount_inc(&sk->sk_wmem_alloc);
 }
 
 /* All packets are sent to the network through this function from

@@ -85,9 +85,9 @@ static void vcc_sock_destruct(struct sock *sk)
 		printk(KERN_DEBUG "%s: rmem leakage (%d bytes) detected.\n",
 		       __func__, atomic_read(&sk->sk_rmem_alloc));
 
-	if (atomic_read(&sk->sk_wmem_alloc))
+	if (refcount_read(&sk->sk_wmem_alloc))
 		printk(KERN_DEBUG "%s: wmem leakage (%d bytes) detected.\n",
-		       __func__, atomic_read(&sk->sk_wmem_alloc));
+		       __func__, refcount_read(&sk->sk_wmem_alloc));
 }
 
 static void vcc_def_wakeup(struct sock *sk)
@@ -106,7 +106,7 @@ static inline int vcc_writable(struct sock *sk)
 	struct atm_vcc *vcc = atm_sk(sk);
 
 	return (vcc->qos.txtp.max_sdu +
-		atomic_read(&sk->sk_wmem_alloc)) <= sk->sk_sndbuf;
+		refcount_read(&sk->sk_wmem_alloc)) <= sk->sk_sndbuf;
 }
 
 static void vcc_write_space(struct sock *sk)
@@ -161,7 +161,7 @@ int vcc_create(struct net *net, struct socket *sock, int protocol, int family, i
 	memset(&vcc->local, 0, sizeof(struct sockaddr_atmsvc));
 	memset(&vcc->remote, 0, sizeof(struct sockaddr_atmsvc));
 	vcc->qos.txtp.max_sdu = 1 << 16; /* for meta VCs */
-	atomic_set(&sk->sk_wmem_alloc, 1);
+	refcount_set(&sk->sk_wmem_alloc, 1);
 	atomic_set(&sk->sk_rmem_alloc, 0);
 	vcc->push = NULL;
 	vcc->pop = NULL;
