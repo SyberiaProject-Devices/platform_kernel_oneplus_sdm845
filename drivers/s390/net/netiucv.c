@@ -744,7 +744,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
 	conn->prof.tx_pending--;
 	if (single_flag) {
 		if ((skb = skb_dequeue(&conn->commit_queue))) {
-			atomic_dec(&skb->users);
+			refcount_dec(&skb->users);
 			if (privptr) {
 				privptr->stats.tx_packets++;
 				privptr->stats.tx_bytes +=
@@ -768,7 +768,7 @@ static void conn_action_txdone(fsm_instance *fi, int event, void *arg)
 		txbytes += skb->len;
 		txpackets++;
 		stat_maxcq++;
-		atomic_dec(&skb->users);
+		refcount_dec(&skb->users);
 		dev_kfree_skb_any(skb);
 	}
 	if (conn->collect_len > conn->prof.maxmulti)
@@ -960,7 +960,7 @@ static void netiucv_purge_skb_queue(struct sk_buff_head *q)
 	struct sk_buff *skb;
 
 	while ((skb = skb_dequeue(q))) {
-		atomic_dec(&skb->users);
+		refcount_dec(&skb->users);
 		dev_kfree_skb_any(skb);
 	}
 }
@@ -1178,7 +1178,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
 			IUCV_DBF_TEXT(data, 2,
 				      "EBUSY from netiucv_transmit_skb\n");
 		} else {
-			atomic_inc(&skb->users);
+			refcount_inc(&skb->users);
 			skb_queue_tail(&conn->collect_queue, skb);
 			conn->collect_len += l;
 			rc = 0;
@@ -1248,7 +1248,7 @@ static int netiucv_transmit_skb(struct iucv_connection *conn,
 		} else {
 			if (copied)
 				dev_kfree_skb(skb);
-			atomic_inc(&nskb->users);
+			refcount_inc(&nskb->users);
 			skb_queue_tail(&conn->commit_queue, nskb);
 		}
 	}

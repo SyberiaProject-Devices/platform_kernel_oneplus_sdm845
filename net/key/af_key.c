@@ -201,7 +201,7 @@ static int pfkey_broadcast_one(struct sk_buff *skb, gfp_t allocation,
 {
 	int err = -ENOBUFS;
 
-	if (atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf)
+	if (refcount_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf)
 		return err;
 
 	skb = skb_clone(skb, allocation);
