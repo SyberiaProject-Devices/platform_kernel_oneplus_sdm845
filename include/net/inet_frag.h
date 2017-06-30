@@ -75,7 +75,7 @@ struct inet_frag_queue {
 	} key;
 	struct timer_list	timer;
 	spinlock_t		lock;
-	atomic_t		refcnt;
+	refcount_t		refcnt;
 	struct sk_buff		*fragments;  /* used in 6lopwpan IPv6. */
 	struct rb_root		rb_fragments; /* Used in IPv4/IPv6. */
 	struct sk_buff		*fragments_tail;
@@ -120,7 +120,7 @@ unsigned int inet_frag_rbtree_purge(struct rb_root *root);
 
 static inline void inet_frag_put(struct inet_frag_queue *q)
 {
-	if (atomic_dec_and_test(&q->refcnt))
+	if (refcount_dec_and_test(&q->refcnt))
 		inet_frag_destroy(q);
 }
 
