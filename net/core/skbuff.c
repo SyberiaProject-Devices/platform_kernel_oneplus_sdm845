@@ -3861,7 +3861,7 @@ struct sk_buff *skb_clone_sk(struct sk_buff *skb)
 	struct sock *sk = skb->sk;
 	struct sk_buff *clone;
 
-	if (!sk || !atomic_inc_not_zero(&sk->sk_refcnt))
+	if (!sk || !refcount_inc_not_zero(&sk->sk_refcnt))
 		return NULL;
 
 	clone = skb_clone(skb, GFP_ATOMIC);
@@ -3928,7 +3928,7 @@ void skb_complete_tx_timestamp(struct sk_buff *skb,
 	/* Take a reference to prevent skb_orphan() from freeing the socket,
 	 * but only if the socket refcount is not zero.
 	 */
-	if (likely(atomic_inc_not_zero(&sk->sk_refcnt))) {
+	if (likely(refcount_inc_not_zero(&sk->sk_refcnt))) {
 		*skb_hwtstamps(skb) = *hwtstamps;
 		__skb_complete_tx_timestamp(skb, sk, SCM_TSTAMP_SND);
 		sock_put(sk);
@@ -4001,7 +4001,7 @@ void skb_complete_wifi_ack(struct sk_buff *skb, bool acked)
 	/* Take a reference to prevent skb_orphan() from freeing the socket,
 	 * but only if the socket refcount is not zero.
 	 */
-	if (likely(atomic_inc_not_zero(&sk->sk_refcnt))) {
+	if (likely(refcount_inc_not_zero(&sk->sk_refcnt))) {
 		err = sock_queue_err_skb(sk, skb);
 		sock_put(sk);
 	}

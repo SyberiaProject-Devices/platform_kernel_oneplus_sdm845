@@ -32,7 +32,7 @@
 #include <net/tcp_states.h>
 #include <net/netns/hash.h>
 
-#include <linux/atomic.h>
+#include <linux/refcount.h>
 #include <asm/byteorder.h>
 
 /* This is for all connections with a full identity, no wildcards.
@@ -335,7 +335,7 @@ static inline struct sock *inet_lookup(struct net *net,
 	sk = __inet_lookup(net, hashinfo, skb, doff, saddr, sport, daddr,
 			   dport, dif, &refcounted);
 
-	if (sk && !refcounted && !atomic_inc_not_zero(&sk->sk_refcnt))
+	if (sk && !refcounted && !refcount_inc_not_zero(&sk->sk_refcnt))
 		sk = NULL;
 	return sk;
 }
