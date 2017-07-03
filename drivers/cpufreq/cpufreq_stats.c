@@ -123,7 +123,7 @@ static struct attribute *default_attrs[] = {
 #endif
 	NULL
 };
-static struct attribute_group stats_attr_group = {
+static const struct attribute_group stats_attr_group = {
 	.attrs = default_attrs,
 	.name = "stats"
 };
