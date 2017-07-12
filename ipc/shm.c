@@ -173,9 +173,10 @@ static inline void shm_lock_by_ptr(struct shmid_kernel *ipcp)
 
 static void shm_rcu_free(struct rcu_head *head)
 {
-	struct ipc_rcu *p = container_of(head, struct ipc_rcu, rcu);
-	struct shmid_kernel *shp = ipc_rcu_to_struct(p);
-
+	struct kern_ipc_perm *ptr = container_of(head, struct kern_ipc_perm,
+							rcu);
+	struct shmid_kernel *shp = container_of(ptr, struct shmid_kernel,
+							shm_perm);
 	security_shm_free(shp);
 	ipc_rcu_free(head);
 }
@@ -246,7 +247,7 @@ static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
 		user_shm_unlock(i_size_read(file_inode(shm_file)),
 				shp->mlock_user);
 	fput(shm_file);
-	ipc_rcu_putref(shp, shm_rcu_free);
+	ipc_rcu_putref(&shp->shm_perm, shm_rcu_free);
 }
 
 /*
@@ -559,7 +560,10 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
 			ns->shm_tot + numpages > ns->shm_ctlall)
 		return -ENOSPC;
 
-	shp = ipc_rcu_alloc(sizeof(*shp));
+	BUILD_BUG_ON(offsetof(struct shmid_kernel, shm_perm) != 0);
+
+	shp = container_of(ipc_rcu_alloc(sizeof(*shp)), struct shmid_kernel,
+				shm_perm);
 	if (!shp)
 		return -ENOMEM;
 
@@ -570,7 +574,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
 	shp->shm_perm.security = NULL;
 	error = security_shm_alloc(shp);
 	if (error) {
-		ipc_rcu_putref(shp, ipc_rcu_free);
+		ipc_rcu_putref(&shp->shm_perm, ipc_rcu_free);
 		return error;
 	}
 
@@ -641,7 +645,7 @@ no_id:
 		user_shm_unlock(size, shp->mlock_user);
 	fput(file);
 no_file:
-	ipc_rcu_putref(shp, shm_rcu_free);
+	ipc_rcu_putref(&shp->shm_perm, shm_rcu_free);
 	return error;
 }
 
