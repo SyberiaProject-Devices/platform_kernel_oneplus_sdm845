@@ -1087,7 +1087,8 @@ static int sysctl_check_table_array(const char *path, struct ctl_table *table)
 {
 	int err = 0;
 
-	if (table->proc_handler == proc_douintvec) {
+	if ((table->proc_handler == proc_douintvec) ||
+	    (table->proc_handler == proc_douintvec_minmax)) {
 		if (table->maxlen != sizeof(unsigned int))
 			err |= sysctl_err(path, table, "array now allowed");
 	}
@@ -1105,6 +1106,7 @@ static int sysctl_check_table(const char *path, struct ctl_table *table)
 		if ((table->proc_handler == proc_dostring) ||
 		    (table->proc_handler == proc_dointvec) ||
 		    (table->proc_handler == proc_douintvec) ||
+		    (table->proc_handler == proc_douintvec_minmax) ||
 		    (table->proc_handler == proc_dointvec_minmax) ||
 		    (table->proc_handler == proc_dointvec_jiffies) ||
 		    (table->proc_handler == proc_dointvec_userhz_jiffies) ||
