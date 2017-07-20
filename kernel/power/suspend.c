@@ -691,6 +691,7 @@ int pm_suspend(suspend_state_t state)
 
 	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 0);
 	pr_err("%s: PM_SUSPEND_PREPARE smp2p_change_state", __func__);
+	pr_info("PM: suspend entry (%s)\n", pm_states[state]);
 	error = enter_state(state);
 	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 1);
 	pr_err("%s: PM_POST_SUSPEND smp2p_change_state", __func__);
@@ -701,6 +702,7 @@ int pm_suspend(suspend_state_t state)
 	} else {
 		suspend_stats.success++;
 	}
+	pr_info("PM: suspend exit\n");
 	return error;
 }
 EXPORT_SYMBOL(pm_suspend);
