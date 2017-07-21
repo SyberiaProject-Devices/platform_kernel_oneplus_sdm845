@@ -641,7 +641,7 @@ static int enter_state(suspend_state_t state)
 	trace_suspend_resume(TPS("sync_filesystems"), 0, false);
 #endif
 
-	pm_pr_dbg("Preparing system for sleep (%s)\n", pm_states[state]);
+	pm_pr_dbg("Preparing system for sleep (%s)\n", mem_sleep_labels[state]);
 	pm_suspend_clear_flags();
 	error = suspend_prepare(state);
 	if (error)
@@ -651,7 +651,7 @@ static int enter_state(suspend_state_t state)
 		goto Finish;
 
 	trace_suspend_resume(TPS("suspend_enter"), state, false);
-	pm_pr_dbg("Suspending system (%s)\n", pm_states[state]);
+	pm_pr_dbg("Suspending system (%s)\n", mem_sleep_labels[state]);
 	pm_restrict_gfp_mask();
 	error = suspend_devices_and_enter(state);
 	pm_restore_gfp_mask();
@@ -680,7 +680,7 @@ int pm_suspend(suspend_state_t state)
 
 	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 0);
 	pr_err("%s: PM_SUSPEND_PREPARE smp2p_change_state", __func__);
-	pr_info("PM: suspend entry (%s)\n", pm_states[state]);
+	pr_info("PM: suspend entry (%s)\n", mem_sleep_labels[state]);
 	error = enter_state(state);
 	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 1);
 	pr_err("%s: PM_POST_SUSPEND smp2p_change_state", __func__);
