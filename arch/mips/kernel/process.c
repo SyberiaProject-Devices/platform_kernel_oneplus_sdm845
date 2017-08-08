@@ -635,7 +635,7 @@ unsigned long arch_align_stack(unsigned long sp)
 	return sp & ALMASK;
 }
 
-static DEFINE_PER_CPU(struct call_single_data, backtrace_csd);
+static DEFINE_PER_CPU(call_single_data_t, backtrace_csd);
 static struct cpumask backtrace_csd_busy;
 
 static void handle_backtrace(void *info)
@@ -646,7 +646,7 @@ static void handle_backtrace(void *info)
 
 static void raise_backtrace(cpumask_t *mask)
 {
-	struct call_single_data *csd;
+	call_single_data_t *csd;
 	int cpu;
 
 	for_each_cpu(cpu, mask) {

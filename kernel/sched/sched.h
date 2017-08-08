@@ -815,7 +815,7 @@ struct rq {
 	unsigned long last_load_update_tick;
 	unsigned long last_blocked_load_update_tick;
 	unsigned int		has_blocked_load;
-	struct call_single_data	nohz_csd;
+	call_single_data_t	nohz_csd;
 #endif /* CONFIG_SMP */
 	unsigned int		nohz_tick_stopped;
 	atomic_t		nohz_flags;
@@ -926,7 +926,7 @@ struct rq {
 #ifdef CONFIG_SCHED_HRTICK
 #ifdef CONFIG_SMP
 	int hrtick_csd_pending;
-	struct call_single_data hrtick_csd;
+	call_single_data_t hrtick_csd;
 #endif
 	struct hrtimer hrtick_timer;
 #endif
@@ -953,7 +953,7 @@ struct rq {
 #endif
 
 #ifdef CONFIG_SMP
-	struct call_single_data	wake_csd;
+	call_single_data_t	wake_csd;
 	struct llist_head	wake_list;
 #endif
 
