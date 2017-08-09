@@ -96,7 +96,7 @@ static const struct idle_cpu *icpu;
 static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
 static int intel_idle(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv, int index);
-static void intel_idle_freeze(struct cpuidle_device *dev,
+static void intel_idle_s2idle(struct cpuidle_device *dev,
 			      struct cpuidle_driver *drv, int index);
 static int intel_idle_cpu_init(int cpu);
 
@@ -125,7 +125,7 @@ static struct cpuidle_state nehalem_cstates[] = {
 		.exit_latency = 3,
 		.target_residency = 6,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-NHM",
 		.desc = "MWAIT 0x01",
@@ -133,7 +133,7 @@ static struct cpuidle_state nehalem_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-NHM",
 		.desc = "MWAIT 0x10",
@@ -141,7 +141,7 @@ static struct cpuidle_state nehalem_cstates[] = {
 		.exit_latency = 20,
 		.target_residency = 80,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-NHM",
 		.desc = "MWAIT 0x20",
@@ -149,7 +149,7 @@ static struct cpuidle_state nehalem_cstates[] = {
 		.exit_latency = 200,
 		.target_residency = 800,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -162,7 +162,7 @@ static struct cpuidle_state snb_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-SNB",
 		.desc = "MWAIT 0x01",
@@ -170,7 +170,7 @@ static struct cpuidle_state snb_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-SNB",
 		.desc = "MWAIT 0x10",
@@ -178,7 +178,7 @@ static struct cpuidle_state snb_cstates[] = {
 		.exit_latency = 80,
 		.target_residency = 211,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-SNB",
 		.desc = "MWAIT 0x20",
@@ -186,7 +186,7 @@ static struct cpuidle_state snb_cstates[] = {
 		.exit_latency = 104,
 		.target_residency = 345,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7-SNB",
 		.desc = "MWAIT 0x30",
@@ -194,7 +194,7 @@ static struct cpuidle_state snb_cstates[] = {
 		.exit_latency = 109,
 		.target_residency = 345,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -207,7 +207,7 @@ static struct cpuidle_state byt_cstates[] = {
 		.exit_latency = 1,
 		.target_residency = 1,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6N-BYT",
 		.desc = "MWAIT 0x58",
@@ -215,7 +215,7 @@ static struct cpuidle_state byt_cstates[] = {
 		.exit_latency = 300,
 		.target_residency = 275,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6S-BYT",
 		.desc = "MWAIT 0x52",
@@ -223,7 +223,7 @@ static struct cpuidle_state byt_cstates[] = {
 		.exit_latency = 500,
 		.target_residency = 560,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7-BYT",
 		.desc = "MWAIT 0x60",
@@ -231,7 +231,7 @@ static struct cpuidle_state byt_cstates[] = {
 		.exit_latency = 1200,
 		.target_residency = 4000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7S-BYT",
 		.desc = "MWAIT 0x64",
@@ -239,7 +239,7 @@ static struct cpuidle_state byt_cstates[] = {
 		.exit_latency = 10000,
 		.target_residency = 20000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -252,7 +252,7 @@ static struct cpuidle_state cht_cstates[] = {
 		.exit_latency = 1,
 		.target_residency = 1,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6N-CHT",
 		.desc = "MWAIT 0x58",
@@ -260,7 +260,7 @@ static struct cpuidle_state cht_cstates[] = {
 		.exit_latency = 80,
 		.target_residency = 275,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6S-CHT",
 		.desc = "MWAIT 0x52",
@@ -268,7 +268,7 @@ static struct cpuidle_state cht_cstates[] = {
 		.exit_latency = 200,
 		.target_residency = 560,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7-CHT",
 		.desc = "MWAIT 0x60",
@@ -276,7 +276,7 @@ static struct cpuidle_state cht_cstates[] = {
 		.exit_latency = 1200,
 		.target_residency = 4000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7S-CHT",
 		.desc = "MWAIT 0x64",
@@ -284,7 +284,7 @@ static struct cpuidle_state cht_cstates[] = {
 		.exit_latency = 10000,
 		.target_residency = 20000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -297,7 +297,7 @@ static struct cpuidle_state ivb_cstates[] = {
 		.exit_latency = 1,
 		.target_residency = 1,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-IVB",
 		.desc = "MWAIT 0x01",
@@ -305,7 +305,7 @@ static struct cpuidle_state ivb_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-IVB",
 		.desc = "MWAIT 0x10",
@@ -313,7 +313,7 @@ static struct cpuidle_state ivb_cstates[] = {
 		.exit_latency = 59,
 		.target_residency = 156,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-IVB",
 		.desc = "MWAIT 0x20",
@@ -321,7 +321,7 @@ static struct cpuidle_state ivb_cstates[] = {
 		.exit_latency = 80,
 		.target_residency = 300,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7-IVB",
 		.desc = "MWAIT 0x30",
@@ -329,7 +329,7 @@ static struct cpuidle_state ivb_cstates[] = {
 		.exit_latency = 87,
 		.target_residency = 300,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -342,7 +342,7 @@ static struct cpuidle_state ivt_cstates[] = {
 		.exit_latency = 1,
 		.target_residency = 1,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-IVT",
 		.desc = "MWAIT 0x01",
@@ -350,7 +350,7 @@ static struct cpuidle_state ivt_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 80,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-IVT",
 		.desc = "MWAIT 0x10",
@@ -358,7 +358,7 @@ static struct cpuidle_state ivt_cstates[] = {
 		.exit_latency = 59,
 		.target_residency = 156,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-IVT",
 		.desc = "MWAIT 0x20",
@@ -366,7 +366,7 @@ static struct cpuidle_state ivt_cstates[] = {
 		.exit_latency = 82,
 		.target_residency = 300,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -379,7 +379,7 @@ static struct cpuidle_state ivt_cstates_4s[] = {
 		.exit_latency = 1,
 		.target_residency = 1,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-IVT-4S",
 		.desc = "MWAIT 0x01",
@@ -387,7 +387,7 @@ static struct cpuidle_state ivt_cstates_4s[] = {
 		.exit_latency = 10,
 		.target_residency = 250,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-IVT-4S",
 		.desc = "MWAIT 0x10",
@@ -395,7 +395,7 @@ static struct cpuidle_state ivt_cstates_4s[] = {
 		.exit_latency = 59,
 		.target_residency = 300,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-IVT-4S",
 		.desc = "MWAIT 0x20",
@@ -403,7 +403,7 @@ static struct cpuidle_state ivt_cstates_4s[] = {
 		.exit_latency = 84,
 		.target_residency = 400,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -416,7 +416,7 @@ static struct cpuidle_state ivt_cstates_8s[] = {
 		.exit_latency = 1,
 		.target_residency = 1,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-IVT-8S",
 		.desc = "MWAIT 0x01",
@@ -424,7 +424,7 @@ static struct cpuidle_state ivt_cstates_8s[] = {
 		.exit_latency = 10,
 		.target_residency = 500,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-IVT-8S",
 		.desc = "MWAIT 0x10",
@@ -432,7 +432,7 @@ static struct cpuidle_state ivt_cstates_8s[] = {
 		.exit_latency = 59,
 		.target_residency = 600,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-IVT-8S",
 		.desc = "MWAIT 0x20",
@@ -440,7 +440,7 @@ static struct cpuidle_state ivt_cstates_8s[] = {
 		.exit_latency = 88,
 		.target_residency = 700,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -453,7 +453,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-HSW",
 		.desc = "MWAIT 0x01",
@@ -461,7 +461,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-HSW",
 		.desc = "MWAIT 0x10",
@@ -469,7 +469,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 33,
 		.target_residency = 100,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-HSW",
 		.desc = "MWAIT 0x20",
@@ -477,7 +477,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 133,
 		.target_residency = 400,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7s-HSW",
 		.desc = "MWAIT 0x32",
@@ -485,7 +485,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 166,
 		.target_residency = 500,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C8-HSW",
 		.desc = "MWAIT 0x40",
@@ -493,7 +493,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 300,
 		.target_residency = 900,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C9-HSW",
 		.desc = "MWAIT 0x50",
@@ -501,7 +501,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 600,
 		.target_residency = 1800,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C10-HSW",
 		.desc = "MWAIT 0x60",
@@ -509,7 +509,7 @@ static struct cpuidle_state hsw_cstates[] = {
 		.exit_latency = 2600,
 		.target_residency = 7700,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -521,7 +521,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-BDW",
 		.desc = "MWAIT 0x01",
@@ -529,7 +529,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-BDW",
 		.desc = "MWAIT 0x10",
@@ -537,7 +537,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 40,
 		.target_residency = 100,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-BDW",
 		.desc = "MWAIT 0x20",
@@ -545,7 +545,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 133,
 		.target_residency = 400,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7s-BDW",
 		.desc = "MWAIT 0x32",
@@ -553,7 +553,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 166,
 		.target_residency = 500,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C8-BDW",
 		.desc = "MWAIT 0x40",
@@ -561,7 +561,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 300,
 		.target_residency = 900,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C9-BDW",
 		.desc = "MWAIT 0x50",
@@ -569,7 +569,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 600,
 		.target_residency = 1800,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C10-BDW",
 		.desc = "MWAIT 0x60",
@@ -577,7 +577,7 @@ static struct cpuidle_state bdw_cstates[] = {
 		.exit_latency = 2600,
 		.target_residency = 7700,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -590,7 +590,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-SKL",
 		.desc = "MWAIT 0x01",
@@ -598,7 +598,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C3-SKL",
 		.desc = "MWAIT 0x10",
@@ -606,7 +606,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 70,
 		.target_residency = 100,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-SKL",
 		.desc = "MWAIT 0x20",
@@ -614,7 +614,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 85,
 		.target_residency = 200,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7s-SKL",
 		.desc = "MWAIT 0x33",
@@ -622,7 +622,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 124,
 		.target_residency = 800,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C8-SKL",
 		.desc = "MWAIT 0x40",
@@ -630,7 +630,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 200,
 		.target_residency = 800,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C9-SKL",
 		.desc = "MWAIT 0x50",
@@ -638,7 +638,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 480,
 		.target_residency = 5000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C10-SKL",
 		.desc = "MWAIT 0x60",
@@ -646,7 +646,7 @@ static struct cpuidle_state skl_cstates[] = {
 		.exit_latency = 890,
 		.target_residency = 5000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -659,7 +659,7 @@ static struct cpuidle_state skx_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-SKX",
 		.desc = "MWAIT 0x01",
@@ -667,7 +667,7 @@ static struct cpuidle_state skx_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-SKX",
 		.desc = "MWAIT 0x20",
@@ -675,7 +675,7 @@ static struct cpuidle_state skx_cstates[] = {
 		.exit_latency = 133,
 		.target_residency = 600,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -688,7 +688,7 @@ static struct cpuidle_state atom_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C2-ATM",
 		.desc = "MWAIT 0x10",
@@ -696,7 +696,7 @@ static struct cpuidle_state atom_cstates[] = {
 		.exit_latency = 20,
 		.target_residency = 80,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C4-ATM",
 		.desc = "MWAIT 0x30",
@@ -704,7 +704,7 @@ static struct cpuidle_state atom_cstates[] = {
 		.exit_latency = 100,
 		.target_residency = 400,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-ATM",
 		.desc = "MWAIT 0x52",
@@ -712,7 +712,7 @@ static struct cpuidle_state atom_cstates[] = {
 		.exit_latency = 140,
 		.target_residency = 560,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -724,7 +724,7 @@ static struct cpuidle_state tangier_cstates[] = {
 		.exit_latency = 1,
 		.target_residency = 4,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C4-TNG",
 		.desc = "MWAIT 0x30",
@@ -732,7 +732,7 @@ static struct cpuidle_state tangier_cstates[] = {
 		.exit_latency = 100,
 		.target_residency = 400,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-TNG",
 		.desc = "MWAIT 0x52",
@@ -740,7 +740,7 @@ static struct cpuidle_state tangier_cstates[] = {
 		.exit_latency = 140,
 		.target_residency = 560,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7-TNG",
 		.desc = "MWAIT 0x60",
@@ -748,7 +748,7 @@ static struct cpuidle_state tangier_cstates[] = {
 		.exit_latency = 1200,
 		.target_residency = 4000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C9-TNG",
 		.desc = "MWAIT 0x64",
@@ -756,7 +756,7 @@ static struct cpuidle_state tangier_cstates[] = {
 		.exit_latency = 10000,
 		.target_residency = 20000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -768,7 +768,7 @@ static struct cpuidle_state avn_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-AVN",
 		.desc = "MWAIT 0x51",
@@ -776,7 +776,7 @@ static struct cpuidle_state avn_cstates[] = {
 		.exit_latency = 15,
 		.target_residency = 45,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -788,7 +788,7 @@ static struct cpuidle_state knl_cstates[] = {
 		.exit_latency = 1,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze },
+		.enter_s2idle = intel_idle_s2idle },
 	{
 		.name = "C6-KNL",
 		.desc = "MWAIT 0x10",
@@ -796,7 +796,7 @@ static struct cpuidle_state knl_cstates[] = {
 		.exit_latency = 120,
 		.target_residency = 500,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze },
+		.enter_s2idle = intel_idle_s2idle },
 	{
 		.enter = NULL }
 };
@@ -809,7 +809,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-BXT",
 		.desc = "MWAIT 0x01",
@@ -817,7 +817,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-BXT",
 		.desc = "MWAIT 0x20",
@@ -825,7 +825,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 133,
 		.target_residency = 133,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C7s-BXT",
 		.desc = "MWAIT 0x31",
@@ -833,7 +833,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 155,
 		.target_residency = 155,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C8-BXT",
 		.desc = "MWAIT 0x40",
@@ -841,7 +841,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 1000,
 		.target_residency = 1000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C9-BXT",
 		.desc = "MWAIT 0x50",
@@ -849,7 +849,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 2000,
 		.target_residency = 2000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C10-BXT",
 		.desc = "MWAIT 0x60",
@@ -857,7 +857,7 @@ static struct cpuidle_state bxt_cstates[] = {
 		.exit_latency = 10000,
 		.target_residency = 10000,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -870,7 +870,7 @@ static struct cpuidle_state dnv_cstates[] = {
 		.exit_latency = 2,
 		.target_residency = 2,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C1E-DNV",
 		.desc = "MWAIT 0x01",
@@ -878,7 +878,7 @@ static struct cpuidle_state dnv_cstates[] = {
 		.exit_latency = 10,
 		.target_residency = 20,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.name = "C6-DNV",
 		.desc = "MWAIT 0x20",
@@ -886,7 +886,7 @@ static struct cpuidle_state dnv_cstates[] = {
 		.exit_latency = 50,
 		.target_residency = 500,
 		.enter = &intel_idle,
-		.enter_freeze = intel_idle_freeze, },
+		.enter_s2idle = intel_idle_s2idle, },
 	{
 		.enter = NULL }
 };
@@ -921,12 +921,12 @@ static __cpuidle int intel_idle(struct cpuidle_device *dev,
 }
 
 /**
- * intel_idle_freeze - simplified "enter" callback routine for suspend-to-idle
+ * intel_idle_s2idle - simplified "enter" callback routine for suspend-to-idle
  * @dev: cpuidle_device
  * @drv: cpuidle driver
  * @index: state index
  */
-static void intel_idle_freeze(struct cpuidle_device *dev,
+static void intel_idle_s2idle(struct cpuidle_device *dev,
 			     struct cpuidle_driver *drv, int index)
 {
 	unsigned long ecx = 1; /* break on interrupt flag */
@@ -1355,7 +1355,7 @@ static void __init intel_idle_cpuidle_driver_init(void)
 		int num_substates, mwait_hint, mwait_cstate;
 
 		if ((cpuidle_state_table[cstate].enter == NULL) &&
-		    (cpuidle_state_table[cstate].enter_freeze == NULL))
+		    (cpuidle_state_table[cstate].enter_s2idle == NULL))
 			break;
 
 		if (cstate + 1 > max_cstate) {
