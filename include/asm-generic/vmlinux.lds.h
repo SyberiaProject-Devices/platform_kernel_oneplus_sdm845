@@ -485,6 +485,7 @@
 		*(.text.hot .text.hot.*)				\
 		*(TEXT_MAIN .text.fixup)				\
 		*(.text.unlikely .text.unlikely.*)			\
+		*(.text..refcount)					\
 		*(.text.unknown .text.unknown.*)			\
 		*(.text..ftrace)					\
 		*(TEXT_CFI_MAIN) 					\
