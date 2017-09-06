@@ -20,3 +20,13 @@ config ZRAM_HIDE_LZO
 config ZRAM_DEFAULT_COMP_ALGORITHM
 	string "Default ZRAM algorithm"
 	default "lz4"
+
+config ZRAM_WRITEBACK
+       bool "Write back incompressible page to backing device"
+       depends on ZRAM
+       default n
+       help
+	 With incompressible page, there is no memory saving to keep it
+	 in memory. Instead, write it out to backing device.
+	 For this feature, admin should set up backing device via
+	 /sys/block/zramX/backing_dev.
