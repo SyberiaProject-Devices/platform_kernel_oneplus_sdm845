@@ -2956,9 +2956,14 @@ bad_swap:
 	p->flags = 0;
 	spin_unlock(&swap_lock);
 	vfree(swap_map);
-	vfree(cluster_info);
-	if (swap_file)
+	kvfree(cluster_info);
+	if (swap_file) {
+		if (inode && S_ISREG(inode->i_mode)) {
+			inode_unlock(inode);
+			inode = NULL;
+		}
 		filp_close(swap_file, NULL);
+	}
 out:
 	if (page && !IS_ERR(page)) {
 		kunmap(page);
