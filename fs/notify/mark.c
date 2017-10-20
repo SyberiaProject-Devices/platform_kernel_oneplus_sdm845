@@ -102,7 +102,7 @@ static DECLARE_DELAYED_WORK(reaper_work, fsnotify_mark_destroy_workfn);
 
 void fsnotify_get_mark(struct fsnotify_mark *mark)
 {
-	atomic_inc(&mark->refcnt);
+	refcount_inc(&mark->refcnt);
 }
 
 void fsnotify_put_mark(struct fsnotify_mark *mark)
@@ -530,7 +530,7 @@ void fsnotify_init_mark(struct fsnotify_mark *mark,
 {
 	memset(mark, 0, sizeof(*mark));
 	spin_lock_init(&mark->lock);
-	atomic_set(&mark->refcnt, 1);
+	refcount_set(&mark->refcnt, 1);
 	mark->free_mark = free_mark;
 }
 
