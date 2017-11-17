@@ -3333,14 +3333,12 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
 			else
 				bitmap_copy(bitmap, tmp_bitmap, bitmap_len);
 		}
-		kfree(tmp_bitmap);
 		*lenp -= left;
 		*ppos += *lenp;
-		return 0;
-	} else {
-		kfree(tmp_bitmap);
-		return err;
 	}
+
+	kfree(tmp_bitmap);
+	return err;
 }
 
 static int do_proc_douintvec_capacity_conv(bool *negp, unsigned long *lvalp,
