@@ -1781,7 +1781,7 @@ ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags,
 	else
 #endif
 	if (p->in_iowait) {
-		delayacct_blkio_end();
+		delayacct_blkio_end(p);
 		atomic_dec(&task_rq(p)->nr_iowait);
 	}
 
@@ -2202,7 +2202,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
 	if (task_cpu(p) != cpu) {
 		if (p->in_iowait) {
-			delayacct_blkio_end();
+			delayacct_blkio_end(p);
 			atomic_dec(&task_rq(p)->nr_iowait);
 		}
 
