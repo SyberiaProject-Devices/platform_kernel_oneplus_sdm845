@@ -591,6 +591,70 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
 }
 
 /*
+ * Retrigger next event is called after clock was set
+ *
+ * Called with interrupts disabled via on_each_cpu()
+ */
+static void retrigger_next_event(void *arg)
+{
+	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
+
+	if (!base->hres_active)
+		return;
+
+	raw_spin_lock(&base->lock);
+	hrtimer_update_base(base);
+	hrtimer_force_reprogram(base, 0);
+	raw_spin_unlock(&base->lock);
+}
+
+/*
+ * Switch to high resolution mode
+ */
+static void hrtimer_switch_to_hres(void)
+{
+	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
+
+	if (tick_init_highres()) {
+		printk(KERN_WARNING "Could not switch to high resolution "
+				    "mode on CPU %d\n", base->cpu);
+		return;
+	}
+	base->hres_active = 1;
+	hrtimer_resolution = HIGH_RES_NSEC;
+
+	tick_setup_sched_timer();
+	/* "Retrigger" the interrupt to get things going */
+	retrigger_next_event(NULL);
+}
+
+static void clock_was_set_work(struct work_struct *work)
+{
+	clock_was_set();
+}
+
+static DECLARE_WORK(hrtimer_work, clock_was_set_work);
+
+/*
+ * Called from timekeeping and resume code to reprogram the hrtimer
+ * interrupt device on all cpus.
+ */
+void clock_was_set_delayed(void)
+{
+	schedule_work(&hrtimer_work);
+}
+
+#else
+
+static inline int hrtimer_is_hres_enabled(void) { return 0; }
+static inline void hrtimer_switch_to_hres(void) { }
+static inline void
+hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
+static inline void retrigger_next_event(void *arg) { }
+
+#endif /* CONFIG_HIGH_RES_TIMERS */
+
+/*
  * When a timer is enqueued and expires earlier than the already enqueued
  * timers, we have to check, whether it expires earlier than the timer for
  * which the clock event device was armed.
@@ -651,85 +715,6 @@ static void hrtimer_reprogram(struct hrtimer *timer,
 	cpu_base->expires_next = expires;
 	tick_program_event(expires, 1);
 }
-
-/*
- * Initialize the high resolution related parts of cpu_base
- */
-static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base)
-{
-	base->hang_detected = 0;
-	base->next_timer = NULL;
-}
-
-/*
- * Retrigger next event is called after clock was set
- *
- * Called with interrupts disabled via on_each_cpu()
- */
-static void retrigger_next_event(void *arg)
-{
-	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
-
-	if (!base->hres_active)
-		return;
-
-	raw_spin_lock(&base->lock);
-	hrtimer_update_base(base);
-	hrtimer_force_reprogram(base, 0);
-	raw_spin_unlock(&base->lock);
-}
-
-/*
- * Switch to high resolution mode
- */
-static void hrtimer_switch_to_hres(void)
-{
-	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
-
-	if (tick_init_highres()) {
-		printk(KERN_WARNING "Could not switch to high resolution "
-				    "mode on CPU %d\n", base->cpu);
-		return;
-	}
-	base->hres_active = 1;
-	hrtimer_resolution = HIGH_RES_NSEC;
-
-	tick_setup_sched_timer();
-	/* "Retrigger" the interrupt to get things going */
-	retrigger_next_event(NULL);
-}
-
-static void clock_was_set_work(struct work_struct *work)
-{
-	clock_was_set();
-}
-
-static DECLARE_WORK(hrtimer_work, clock_was_set_work);
-
-/*
- * Called from timekeeping and resume code to reprogram the hrtimer
- * interrupt device on all cpus.
- */
-void clock_was_set_delayed(void)
-{
-	schedule_work(&hrtimer_work);
-}
-
-#else
-
-static inline int hrtimer_is_hres_enabled(void) { return 0; }
-static inline void hrtimer_switch_to_hres(void) { }
-static inline void
-hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
-static inline int hrtimer_reprogram(struct hrtimer *timer,
-				    struct hrtimer_clock_base *base)
-{
-	return 0;
-}
-static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base) { }
-static inline void retrigger_next_event(void *arg) { }
-
-#endif /* CONFIG_HIGH_RES_TIMERS */
 
 /*
  * Clock realtime was set
@@ -1612,7 +1597,6 @@ int hrtimers_prepare_cpu(unsigned int cpu)
 	cpu_base->cpu = cpu;
 	cpu_base->hres_active = 0;
 	cpu_base->expires_next = KTIME_MAX;
-	hrtimer_init_hres(cpu_base);
 	return 0;
 }
 
