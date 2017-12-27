@@ -252,7 +252,6 @@ static bool key_back_disable=false,key_appselect_disable=false;
 #endif
 static struct synaptics_ts_data *ts_g = NULL;
 static struct workqueue_struct *synaptics_wq = NULL;
-static struct workqueue_struct *synaptics_report = NULL;
 static struct workqueue_struct *get_base_report = NULL;
 static struct proc_dir_entry *prEntry_tp = NULL;
 
@@ -1903,19 +1902,16 @@ static int synaptics_rmi4_free_fingers(struct synaptics_ts_data *ts)
 	return 0;
 }
 
-static void synaptics_ts_work_func(struct work_struct *work)
+static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 {
-	int ret,status_check;
+	struct synaptics_ts_data *ts = (struct synaptics_ts_data *)dev_id;
+	int ret, status_check;
 	uint8_t status = 0;
 	uint8_t inte = 0;
 
-    	struct synaptics_ts_data *ts = ts_g;
-
+	touch_disable(ts);
 	if (atomic_read(&ts->is_stop) == 1)
-	{
-		touch_disable(ts);
-		return;
-	}
+		return IRQ_HANDLED;
 
 	if( ts->enable_remote) {
 		goto END;
@@ -1998,31 +1994,9 @@ END:
 	pm_qos_update_request(&ts->pm_qos_req, PM_QOS_DEFAULT_VALUE);
 	//ret = set_changer_bit(ts);
 	touch_enable(ts);
-EXIT:
-	return;
-}
-
-#ifndef TPD_USE_EINT
-static enum hrtimer_restart synaptics_ts_timer_func(struct hrtimer *timer)
-{
-	struct synaptics_ts_data *ts = container_of(timer, struct synaptics_ts_data, timer);
-	mutex_lock(&ts->mutex);
-	synaptics_ts_work_func(ts);
-	mutex_unlock(&ts->mutex);
-	hrtimer_start(&ts->timer, ktime_set(0, 12500000), HRTIMER_MODE_REL);
-	return HRTIMER_NORESTART;
-}
-#else
-static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
-{
-	struct synaptics_ts_data *ts = (struct synaptics_ts_data *)dev_id;
-	touch_disable(ts);
-	__pm_stay_awake(&ts->source);	//avoid system enter suspend lead to i2c error
-	synaptics_ts_work_func(&ts->report_work);
-	__pm_relax(&ts->source);
+ EXIT:
 	return IRQ_HANDLED;
 }
-#endif
 
 static ssize_t tp_baseline_test_read_func(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
 {
@@ -6165,8 +6139,6 @@ exit_init_failed:
 exit_createworkqueue_failed:
 	destroy_workqueue(synaptics_wq);
 	synaptics_wq = NULL;
-	destroy_workqueue(synaptics_report);
-	synaptics_report = NULL;
 	destroy_workqueue(get_base_report);
 	get_base_report = NULL;
 
