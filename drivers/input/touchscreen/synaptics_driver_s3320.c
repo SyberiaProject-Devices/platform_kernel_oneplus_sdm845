@@ -1635,7 +1635,6 @@ void int_touch(void)
 	points.z = 0;
 	points.status = 0;
 
-	mutex_lock(&ts->mutexreport);
 #ifdef REPORT_2D_PRESSURE
     if (ts->support_ft){
         ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x4);
@@ -1643,7 +1642,7 @@ void int_touch(void)
             sizeof(points.pressure), &points.pressure);
         if (ret < 0) {
             TPD_ERR("synaptics_int_touch: i2c_transfer failed\n");
-            goto INT_TOUCH_END;
+            return;
         }
         if (0 == points.pressure)//workaround for have no pressure value input reader into hover mode
         {
@@ -1667,7 +1666,7 @@ void int_touch(void)
 	ret = synaptics_rmi4_i2c_read_block(ts->client, F12_2D_DATA15, 2, object_attention);
     if (ret < 0) {
         TPD_ERR("synaptics_int_touch F12_2D_DATA15: i2c_transfer failed\n");
-        goto INT_TOUCH_END;
+        return;
     }
 	total_status = (object_attention[1] << 8) | object_attention[0];
 
@@ -1681,12 +1680,12 @@ void int_touch(void)
 	}
         if(count_data > 10){
             TPD_ERR("count_data is: %d\n", count_data);
-            goto INT_TOUCH_END;
+            return;
         }
 	ret = synaptics_rmi4_i2c_read_block(ts->client, F12_2D_DATA_BASE, count_data*8+1, buf);
 	if (ret < 0) {
 		TPD_ERR("synaptics_int_touch F12_2D_DATA_BASE: i2c_transfer failed\n");
-		goto INT_TOUCH_END;
+		return;
 	}
 	for( i = 0; i < count_data; i++ ) {
 		points.status = buf[i*8];
@@ -1825,8 +1824,6 @@ void int_touch(void)
 			tp_baseline_get(ts, false);
 	}
 
-INT_TOUCH_END:
-	mutex_unlock(&ts->mutexreport);
 }
 static char log_count = 0;
 #ifdef SUPPORT_TP_TOUCHKEY
@@ -1836,7 +1833,7 @@ static char log_count = 0;
 #define OEM_KEY_BACK KEY_BACK
 #define OEM_KEY_APPSELECT KEY_APPSELECT
 #endif
-static void int_key_report_s3508(struct synaptics_ts_data *ts)
+static inline void int_key_report_s3508(struct synaptics_ts_data *ts)
 {
     	int ret= 0;
 	int F1A_0D_DATA00=0x00;
