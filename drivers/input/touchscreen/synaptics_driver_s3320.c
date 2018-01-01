@@ -333,7 +333,7 @@ static int F34_FLASH_CTRL00;
 static int F51_CUSTOM_CTRL00;
 static int F51_CUSTOM_DATA04;
 static int F51_CUSTOM_DATA11;
-static int version_is_s3508=0;
+static __read_mostly int version_is_s3508 = 0;
 #if TP_TEST_ENABLE
 static int F54_ANALOG_QUERY_BASE;//0x73
 static int F54_ANALOG_COMMAND_BASE;//0x72
@@ -472,7 +472,6 @@ static struct i2c_driver tpd_i2c_driver = {
 struct synaptics_ts_data {
 	struct i2c_client *client;
 	struct mutex mutex;
-	struct mutex mutexreport;
 	int irq;
 	int irq_gpio;
 	atomic_t irq_enable;
@@ -993,16 +992,6 @@ static int synaptics_enable_interrupt(struct synaptics_ts_data *ts, int enable)
 	return 0;
 }
 
-static void delay_qt_ms(unsigned long  w_ms)
-{
-	unsigned long i;
-	unsigned long j;
-	for(i = 0; i < w_ms; i++) {
-		for (j = 0; j < 1000; j++) {
-			udelay(1);
-		}
-	}
-}
 /*
 static void int_state(struct synaptics_ts_data *ts)
 {
@@ -1012,8 +1001,8 @@ static void int_state(struct synaptics_ts_data *ts)
 		TPD_ERR("%s:error cannot reset touch panel!\n",__func__);
 		return;
 	}
-	//delay_qt_ms(170);
-	delay_qt_ms(100);
+	//mdelay(170);
+	mdelay(100);
 #ifdef SUPPORT_GLOVES_MODE
 	synaptics_glove_mode_enable(ts);
 #endif
@@ -1610,8 +1599,8 @@ extern bool virtual_key_enable;
 
 void int_touch(void)
 {
-	int ret = -1,i = 0;
-	uint8_t buf[90];
+	int ret = -1, i = 0;
+	uint8_t buf[90] = { 0 };
 	uint8_t count_data = 0;
 	uint8_t object_attention[2];
 	uint16_t total_status = 0;
@@ -1629,45 +1618,46 @@ void int_touch(void)
 #endif
 	struct synaptics_ts_data *ts = ts_g;
 
-	memset(buf, 0, sizeof(buf));
 	points.x = 0;
 	points.y = 0;
 	points.z = 0;
 	points.status = 0;
 
 #ifdef REPORT_2D_PRESSURE
-    if (ts->support_ft){
-        ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x4);
-        ret = synaptics_rmi4_i2c_read_block(ts->client, 0x19,\
-            sizeof(points.pressure), &points.pressure);
-        if (ret < 0) {
-            TPD_ERR("synaptics_int_touch: i2c_transfer failed\n");
-            return;
-        }
-        if (0 == points.pressure)//workaround for have no pressure value input reader into hover mode
-        {
-            pres_value++;
-            if (255 == pres_value)
-                pres_value = 1;
-        }
-        else
-        {
-            pres_value = points.pressure;
-        }
-    }
+	if (ts->support_ft) {
+		ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x4);
+		ret = synaptics_rmi4_i2c_read_block(ts->client, 0x19,
+						    sizeof(points.pressure),
+						    &points.pressure);
+		if (unlikely(ret < 0)) {
+			TPD_ERR("synaptics_int_touch: i2c_transfer failed\n");
+			return;
+		}
+		if (0 == points.pressure)	//workaround for have no pressure value input reader into hover mode
+		{
+			pres_value++;
+			if (255 == pres_value)
+				pres_value = 1;
+		} else {
+			pres_value = points.pressure;
+		}
+	}
 #endif
-	ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x0);
+	i2c_smbus_write_byte_data(ts->client, 0xff, 0x0);
 	if (version_is_s3508 == 1)
 		F12_2D_DATA15 = 0x0009;
 	else if (version_is_s3508 == 0)
 		F12_2D_DATA15 = 0x000C;
 	else if (version_is_s3508 == 2)
-		F12_2D_DATA15 = 0x000B;/*s3706 for 17819*/
-	ret = synaptics_rmi4_i2c_read_block(ts->client, F12_2D_DATA15, 2, object_attention);
-    if (ret < 0) {
-        TPD_ERR("synaptics_int_touch F12_2D_DATA15: i2c_transfer failed\n");
-        return;
-    }
+		F12_2D_DATA15 = 0x000B;	/*s3706 for 17819 */
+	ret =
+	    synaptics_rmi4_i2c_read_block(ts->client, F12_2D_DATA15, 2,
+					  object_attention);
+	if (unlikely(ret < 0)) {
+		TPD_ERR
+		    ("synaptics_int_touch F12_2D_DATA15: i2c_transfer failed\n");
+		return;
+	}
 	total_status = (object_attention[1] << 8) | object_attention[0];
 
 	if(total_status){
@@ -1678,13 +1668,16 @@ void int_touch(void)
 	}else{
 		count_data = 0;
 	}
-        if(count_data > 10){
-            TPD_ERR("count_data is: %d\n", count_data);
-            return;
-        }
-	ret = synaptics_rmi4_i2c_read_block(ts->client, F12_2D_DATA_BASE, count_data*8+1, buf);
-	if (ret < 0) {
-		TPD_ERR("synaptics_int_touch F12_2D_DATA_BASE: i2c_transfer failed\n");
+	if (unlikely(count_data > 10)) {
+		TPD_ERR("count_data is: %d\n", count_data);
+		return;
+	}
+	ret =
+	    synaptics_rmi4_i2c_read_block(ts->client, F12_2D_DATA_BASE,
+					  count_data * 8 + 1, buf);
+	if (unlikely(ret < 0)) {
+		TPD_ERR
+		    ("synaptics_int_touch F12_2D_DATA_BASE: i2c_transfer failed\n");
 		return;
 	}
 	for( i = 0; i < count_data; i++ ) {
@@ -1794,9 +1787,7 @@ void int_touch(void)
 
 	last_status = current_status & 0x02;
 
-	if (finger_num == 0/* && last_status && (check_key <= 1)*/) {
-		if (3 == (++prlog_count % 6))
-			TPD_ERR("all finger up\n");
+	if (finger_num == 0 /* && last_status && (check_key <= 1) */ ) {
 		if (ts->project_version == 0x03) {
 			if ((ts->unlock_succes == 1) && (need_reset ==1) && (ts->is_suspended == 0)) {
 				TPD_DEBUG("touch hold reset %d\n", need_reset);
@@ -1817,7 +1808,7 @@ void int_touch(void)
 	}
 	input_sync(ts->input_dev);
 
-	if ((finger_num == 0) && (get_tp_base == 0)){//all finger up do get base once
+	if (unlikely((finger_num == 0) && (get_tp_base == 0))) {	//all finger up do get base once
 		get_tp_base = 1;
 		TPD_ERR("start get base data:%d\n",get_tp_base);
 		if (!ts->en_up_down)
@@ -1871,8 +1862,9 @@ static inline void int_key_report_s3508(struct synaptics_ts_data *ts)
 	ts->pre_btn_state = button_key & 0x07;
 	//input_sync(ts->input_dev);
 	ret = synaptics_rmi4_i2c_write_byte(ts->client, 0xff, 0x00);
-	if (ret < 0) {
-		TPD_ERR("%s: line[%d]Failed to change page!!\n",__func__,__LINE__);
+	if (unlikely(ret < 0)) {
+		TPD_ERR("%s: line[%d]Failed to change page!!\n", __func__,
+			__LINE__);
 		return;
 	}
 	return;
@@ -1906,34 +1898,34 @@ static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 	uint8_t status = 0;
 	uint8_t inte = 0;
 
-	touch_disable(ts);
-	if (atomic_read(&ts->is_stop) == 1)
+	if (unlikely(atomic_read(&ts->is_stop) == 1)) {
+		touch_disable(ts);
 		return IRQ_HANDLED;
-
-	if( ts->enable_remote) {
-		goto END;
 	}
+
+	if (unlikely(ts->enable_remote))
+		goto END;
 
 	/* prevent CPU from entering deep sleep */
 	pm_qos_update_request(&ts->pm_qos_req, 100);
 
-	ret = synaptics_rmi4_i2c_write_byte(ts->client, 0xff, 0x00 );
+	synaptics_rmi4_i2c_write_byte(ts->client, 0xff, 0x00);
 	ret = synaptics_rmi4_i2c_read_word(ts->client, F01_RMI_DATA_BASE);
 
-	if( ret < 0 ) {
+	if (unlikely(ret < 0)) {
 		TPDTM_DMESG("Synaptic:ret = %d\n", ret);
 		synaptics_hard_reset(ts);
-		if (ts->is_suspended == 1 && ts->gesture_enable == 0) {
+		if (ts->is_suspended == 1 && ts->gesture_enable == 0)
 			touch_disable(ts);
-			goto EXIT;
-		}
 		goto END;
 	}
 	status = ret & 0xff;
 	inte = (ret & 0x7f00)>>8;
 	//TPD_ERR("%s status[0x%x],inte[0x%x]\n",__func__,status,inte);
-        if(status & 0x80){
-		TPD_DEBUG("enter reset tp status,and ts->in_gesture_mode is:%d\n",ts->in_gesture_mode);
+	if (unlikely(status & 0x80)) {
+		TPD_DEBUG
+		    ("enter reset tp status,and ts->in_gesture_mode is:%d\n",
+		     ts->in_gesture_mode);
 		status_check = synaptics_init_panel(ts);
 		if (status_check < 0) {
 			TPD_ERR("synaptics_init_panel failed\n");
@@ -1956,7 +1948,7 @@ static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 		goto END;
 	}
 */
-	if (inte == 1) {
+	if (unlikely(inte == 1)) {
 		TPD_ERR("%s: spontaneous reset detected\n", __func__);
 		ret = synaptics_rmi4_free_fingers(ts);
 		if (ret < 0)
@@ -1989,9 +1981,7 @@ static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 
 END:
 	pm_qos_update_request(&ts->pm_qos_req, PM_QOS_DEFAULT_VALUE);
-	//ret = set_changer_bit(ts);
-	touch_enable(ts);
- EXIT:
+
 	return IRQ_HANDLED;
 }
 
@@ -2464,8 +2454,10 @@ static void checkCMD(int delay_time)
 	int flag_err = 0;
 	struct synaptics_ts_data *ts = ts_g;
 	do {
-		delay_qt_ms(delay_time); /*wait delay_time ms*/
-		ret = synaptics_rmi4_i2c_read_byte(ts->client, F54_ANALOG_COMMAND_BASE);
+		mdelay(delay_time);	/*wait delay_time ms */
+		ret =
+		    synaptics_rmi4_i2c_read_byte(ts->client,
+						 F54_ANALOG_COMMAND_BASE);
 		flag_err++;
 	} while ((ret > 0x00) && (flag_err < 60));
 	if (ret > 0x00 || flag_err >= 60)
@@ -2479,10 +2471,12 @@ static void checkCMD_RT133(void)
 	struct synaptics_ts_data *ts = ts_g;
 	do {
 		if (version_is_s3508 == 2)
-			delay_qt_ms(80);
+			mdelay(80);
 		else
-			delay_qt_ms(10);
-		ret = synaptics_rmi4_i2c_read_byte(ts->client, F54_ANALOG_COMMAND_BASE);
+			mdelay(10);
+		ret =
+		    synaptics_rmi4_i2c_read_byte(ts->client,
+						 F54_ANALOG_COMMAND_BASE);
 		err_count++;
 	}while( (ret & 0x01) && (err_count < 30) );
 	if( ret & 0x01 || err_count >= 30)
@@ -2570,8 +2564,10 @@ static ssize_t tp_baseline_show(struct device_driver *ddri, char *buf)
 	}
 	num_read_chars += sprintf(&(buf[num_read_chars]), "\n");
 	TPD_DEBUG("\nread all is oK\n");
-	ret = i2c_smbus_write_byte_data(ts->client, F54_ANALOG_COMMAND_BASE, 0X02);
-	delay_qt_ms(60);
+	ret =
+	    i2c_smbus_write_byte_data(ts->client, F54_ANALOG_COMMAND_BASE,
+				      0X02);
+	mdelay(60);
 	msm_cpuidle_set_sleep_disable(false);
 #ifdef SUPPORT_GLOVES_MODE
 	synaptics_glove_mode_enable(ts);
@@ -2624,8 +2620,10 @@ static ssize_t tp_rawdata_show(struct device_driver *ddri, char *buf)
 		}
 	}
 	num_read_chars += sprintf(&(buf[num_read_chars]), "\n");
-	ret = i2c_smbus_write_byte_data(ts->client,F54_ANALOG_COMMAND_BASE,0X02);
-	delay_qt_ms(60);
+	ret =
+	    i2c_smbus_write_byte_data(ts->client, F54_ANALOG_COMMAND_BASE,
+				      0X02);
+	mdelay(60);
 	synaptics_enable_interrupt(ts, 1);
 	mutex_unlock(&ts->mutex);
 	touch_enable(ts);
@@ -3023,8 +3021,10 @@ END:
 		set_fs(old_fs);
 	}
 	//release_firmware(fw);
-	ret = i2c_smbus_write_byte_data(ts->client, F54_ANALOG_COMMAND_BASE, 0X02);
-	delay_qt_ms(60);
+	ret =
+	    i2c_smbus_write_byte_data(ts->client, F54_ANALOG_COMMAND_BASE,
+				      0X02);
+	mdelay(60);
 	ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x00);
 	ret = i2c_smbus_write_byte_data(ts->client, F01_RMI_CMD00, 0x01);
 	msleep(150);
@@ -3428,8 +3428,8 @@ END:
 	}
 
 	ret = i2c_smbus_write_byte_data(ts->client,
-		F54_ANALOG_COMMAND_BASE, 0X02);
-	delay_qt_ms(60);
+					F54_ANALOG_COMMAND_BASE, 0X02);
+	mdelay(60);
 	ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x00);
 	ret = i2c_smbus_write_byte_data(ts->client, F01_RMI_CMD00, 0x01);
 	/*hard reset TP*/
@@ -3573,8 +3573,10 @@ static ssize_t tp_baseline_show_with_cbc(struct device_driver *ddri, char *buf)
 		}
 	}
 
-	ret = synaptics_rmi4_i2c_write_byte(ts->client,F54_ANALOG_COMMAND_BASE,0X02);
-	delay_qt_ms(60);
+	ret =
+	    synaptics_rmi4_i2c_write_byte(ts->client, F54_ANALOG_COMMAND_BASE,
+					  0X02);
+	mdelay(60);
 	msm_cpuidle_set_sleep_disable(false);
 	synaptics_enable_interrupt(ts,1);
 	mutex_unlock(&ts->mutex);
@@ -5412,7 +5414,7 @@ static int synapitcs_ts_update(struct i2c_client *client, const uint8_t *data, u
 		synaptics_rmi4_i2c_write_byte(client,SynaF01CommandBase,0x01);
 	}
 	//step2 wait ATTN
-	//delay_qt_ms(1000);
+	//mdelay(1000);
 	mdelay(1500);
 	synaptics_read_register_map(ts);
 	//FW flash check!
@@ -5856,8 +5858,7 @@ static int synaptics_ts_probe(struct i2c_client *client, const struct i2c_device
 
 	msleep(100);//after power on tp need sometime from bootloader to ui mode
 	mutex_init(&ts->mutex);
-	mutex_init(&ts->mutexreport);
-	atomic_set(&ts->irq_enable,0);
+	atomic_set(&ts->irq_enable, 0);
 
 	ts->is_suspended = 0;
 	atomic_set(&ts->is_stop,0);
