@@ -85,7 +85,7 @@ static void prom_sync_me(void)
 	show_free_areas(0);
 	if (!is_idle_task(current)) {
 		local_irq_enable();
-		sys_sync();
+		ksys_sync();
 		local_irq_disable();
 	}
 	prom_printf("Returning to prom\n");

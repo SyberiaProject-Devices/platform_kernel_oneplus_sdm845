@@ -926,5 +926,6 @@ asmlinkage long sys_pkey_free(int pkey);
 asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
 				       siginfo_t __user *info,
 				       unsigned int flags);
+void ksys_sync(void);
 
 #endif
