@@ -27,6 +27,8 @@
  *  of the License.
  */
 
+#include "sched.h"
+
 #include <linux/gfp.h>
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
