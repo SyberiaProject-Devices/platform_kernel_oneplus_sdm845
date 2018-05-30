@@ -12,7 +12,6 @@
 
 #include <linux/kernel.h>
 #include <linux/cpuidle.h>
-#include <linux/pm_qos.h>
 #include <linux/time.h>
 #include <linux/ktime.h>
 #include <linux/hrtimer.h>
@@ -269,7 +268,7 @@ again:
 static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 {
 	struct menu_device *data = this_cpu_ptr(&menu_devices);
-	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+	int latency_req = cpuidle_governor_latency_req(dev->cpu);
 	int i;
 	unsigned int interactivity_req;
 	unsigned int expected_interval;
@@ -279,10 +278,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 		menu_update(drv, dev);
 		data->needs_update = 0;
 	}
-
-	if (resume_latency < latency_req &&
-	    resume_latency != PM_QOS_RESUME_LATENCY_NO_CONSTRAINT)
-		latency_req = resume_latency;
 
 	/* Special case when user has set very strict latency requirement */
 	if (unlikely(latency_req == 0))
