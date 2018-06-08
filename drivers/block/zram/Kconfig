@@ -14,9 +14,6 @@ config ZRAM
 
 	  See Documentation/blockdev/zram.txt for more information.
 
-config ZRAM_HIDE_LZO
-	bool "Hide LZO compression algorithm in available compression list"
-
 config ZRAM_DEFAULT_COMP_ALGORITHM
 	string "Default ZRAM algorithm"
 	default "lz4"
@@ -30,6 +27,8 @@ config ZRAM_WRITEBACK
 	 in memory. Instead, write it out to backing device.
 	 For this feature, admin should set up backing device via
 	 /sys/block/zramX/backing_dev.
+
+	 See Documentation/blockdev/zram.txt for more information.
 
 config ZRAM_MEMORY_TRACKING
 	bool "Track zRam block status"
