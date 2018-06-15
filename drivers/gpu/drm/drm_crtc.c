@@ -103,7 +103,7 @@ out:
 }
 EXPORT_SYMBOL(drm_crtc_force_disable_all);
 
-DEFINE_WW_CLASS(crtc_ww_class);
+DEFINE_WD_CLASS(crtc_ww_class);
 
 static unsigned int drm_num_crtcs(struct drm_device *dev)
 {
