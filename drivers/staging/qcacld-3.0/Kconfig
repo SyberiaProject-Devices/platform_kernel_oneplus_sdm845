@@ -163,4 +163,8 @@ config QCA_CLD_DEBUG
 	bool "Debug Qualcomm Atheros CLD WLAN module"
 	default n
 
+config QCACLD_FEATURE_METERING
+	bool "Stats & Quota Metering feature"
+	default n
+
 endif # QCA_CLD_WLAN
