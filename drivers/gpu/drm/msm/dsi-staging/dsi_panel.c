@@ -1599,7 +1599,12 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
     "qcom,mdss-dsi-panel-oneplus-mode-on-command",
     "qcom,mdss-dsi-panel-adaption-mode-on-command",
     "qcom,mdss-dsi-panel-srgb-off-command", // also disables DCI P3, night and OP modes
-
+    "qcom,mdss-dsi-panel-hbm-off-command",
+    "qcom,mdss-dsi-panel-hbm-on-command",
+    "qcom,mdss-dsi-panel-hbm-on-command-2",
+    "qcom,mdss-dsi-panel-hbm-on-command-3",
+    "qcom,mdss-dsi-panel-hbm-on-command-4",
+    "qcom,mdss-dsi-panel-hbm-on-command-5",
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -1667,6 +1672,12 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
     "qcom,mdss-dsi-panel-oneplus-mode-on-command-state",
     "qcom,mdss-dsi-adaption-mode-on-command-state",
     "qcom,mdss-dsi-srgb-off-command-state",
+    "qcom,mdss-dsi-hbm-off-command-state",
+    "qcom,mdss-dsi-hbm-on-command-state",
+    "qcom,mdss-dsi-hbm-on-command-state",
+    "qcom,mdss-dsi-hbm-on-command-state",
+    "qcom,mdss-dsi-hbm-on-command-state",
+    "qcom,mdss-dsi-hbm-on-command-state",
 };
 
 static int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt)
@@ -3988,8 +3999,12 @@ int dsi_panel_enable(struct dsi_panel *panel)
         if (panel->adaption_mode)
             dsi_panel_set_adaption_mode(panel, panel->adaption_mode);
 
+/*
         if (panel->hbm_mode)
             dsi_panel_set_hbm_mode(panel, panel->hbm_mode);
+*/
+        if (panel->hbm_los_mode)
+	    dsi_panel_apply_hbm_mode(panel);
 
         if (panel->display_mode != DISPLAY_MODE_DEFAULT)
 	    dsi_panel_apply_display_mode(panel);
@@ -4095,6 +4110,32 @@ error:
 	pr_err("end\n");
 	/* add print actvie ws */
 	return rc;
+}
+
+int dsi_panel_apply_hbm_mode(struct dsi_panel *panel)
+{
+    static const enum dsi_cmd_set_type type_map[] = {
+	DSI_CMD_SET_LOS_HBM_OFF,
+	DSI_CMD_SET_LOS_HBM_ON_1,
+	DSI_CMD_SET_LOS_HBM_ON_2,
+	DSI_CMD_SET_LOS_HBM_ON_3,
+	DSI_CMD_SET_LOS_HBM_ON_4,
+	DSI_CMD_SET_LOS_HBM_ON_5
+    };
+
+    enum dsi_cmd_set_type type;
+    int rc;
+
+    if (panel->hbm_los_mode >= 0 && panel->hbm_los_mode < ARRAY_SIZE(type_map))
+	type = type_map[panel->hbm_los_mode];
+    else
+	type = DSI_CMD_SET_HBM_OFF;
+
+    mutex_lock(&panel->panel_lock);
+    rc = dsi_panel_tx_cmd_set(panel, type);
+    mutex_unlock(&panel->panel_lock);
+
+    return rc;
 }
 
 int dsi_panel_unprepare(struct dsi_panel *panel)
