@@ -3972,6 +3972,7 @@ extern struct atomic_notifier_head load_alert_notifier_head;
 # define vcpu_is_preempted(cpu)		false
 #endif
 
+extern long msm_sched_setaffinity(pid_t pid, struct cpumask *new_mask);
 extern long sched_setaffinity(pid_t pid, const struct cpumask *new_mask);
 extern long sched_getaffinity(pid_t pid, struct cpumask *mask);
 
