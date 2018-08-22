@@ -2858,7 +2858,8 @@ reflush:
 }
 EXPORT_SYMBOL_GPL(drain_workqueue);
 
-static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr)
+static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
+			     bool from_cancel)
 {
 	struct worker *worker = NULL;
 	struct worker_pool *pool;
@@ -2897,7 +2898,8 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr)
 	 * flusher is not running on the same workqueue by verifying write
 	 * access.
 	 */
-	if (pwq->wq->saved_max_active == 1 || pwq->wq->rescuer)
+	if (!from_cancel &&
+	    (pwq->wq->saved_max_active == 1 || pwq->wq->rescuer)) {
 		lock_map_acquire(&pwq->wq->lockdep_map);
 	else
 		lock_map_acquire_read(&pwq->wq->lockdep_map);
@@ -2907,6 +2909,22 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr)
 already_gone:
 	spin_unlock_irq(&pool->lock);
 	return false;
+}
+
+static bool __flush_work(struct work_struct *work, bool from_cancel)
+{
+	struct wq_barrier barr;
+
+	if (WARN_ON(!wq_online))
+		return false;
+
+	if (start_flush_work(work, &barr, from_cancel)) {
+		wait_for_completion(&barr.done);
+		destroy_work_on_stack(&barr.work);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 /**
@@ -2922,21 +2940,7 @@ already_gone:
  */
 bool flush_work(struct work_struct *work)
 {
-	struct wq_barrier barr;
-
-	if (WARN_ON(!wq_online))
-		return false;
-
-	lock_map_acquire(&work->lockdep_map);
-	lock_map_release(&work->lockdep_map);
-
-	if (start_flush_work(work, &barr)) {
-		wait_for_completion(&barr.done);
-		destroy_work_on_stack(&barr.work);
-		return true;
-	} else {
-		return false;
-	}
+	return __flush_work(work, false);
 }
 EXPORT_SYMBOL_GPL(flush_work);
 
@@ -3002,7 +3006,7 @@ static bool __cancel_work_timer(struct work_struct *work, bool is_dwork)
 	 * isn't executing.
 	 */
 	if (wq_online)
-		flush_work(work);
+		__flush_work(work, true);
 
 	clear_work_data(work);
 
