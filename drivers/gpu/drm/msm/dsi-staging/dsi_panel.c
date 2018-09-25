@@ -3915,22 +3915,26 @@ int dsi_panel_enable(struct dsi_panel *panel)
 	rc = dsi_panel_set_aod_mode(panel, 0);
 		panel->aod_status=0;
 		}
-	if (panel->srgb_mode)
-		{
-			  dsi_panel_set_srgb_mode(panel, panel->srgb_mode);
-			  }
-		  if (panel->dci_p3_mode){
-		  	printk(KERN_ERR"Z2\n");
-			  dsi_panel_set_dci_p3_mode(panel, panel->dci_p3_mode);
-			  }
-		  if (panel->night_mode){
-		  	printk(KERN_ERR"Z3\n");
-			  dsi_panel_set_night_mode(panel, panel->night_mode);
-			  }
-		  if (panel->adaption_mode){
-		  	printk(KERN_ERR"Z4\n");
-			  dsi_panel_set_adaption_mode(panel, panel->adaption_mode);
-			  }
+        if (panel->acl_mode)
+            dsi_panel_set_acl_mode(panel, panel->acl_mode);
+
+        if (panel->srgb_mode)
+            dsi_panel_set_srgb_mode(panel, panel->srgb_mode);
+
+        if (panel->dci_p3_mode)
+            dsi_panel_set_dci_p3_mode(panel, panel->dci_p3_mode);
+
+        if (panel->night_mode)
+            dsi_panel_set_night_mode(panel, panel->night_mode);
+
+        if (panel->oneplus_mode)
+            dsi_panel_set_oneplus_mode(panel, panel->oneplus_mode);
+
+        if (panel->adaption_mode)
+            dsi_panel_set_adaption_mode(panel, panel->adaption_mode);
+
+        if (panel->hbm_mode)
+            dsi_panel_set_hbm_mode(panel, panel->hbm_mode);
 
 	pr_err("end\n");
 	return rc;
