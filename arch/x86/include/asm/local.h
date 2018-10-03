@@ -52,7 +52,7 @@ static inline void local_sub(long i, local_t *l)
  */
 static inline bool local_sub_and_test(long i, local_t *l)
 {
-	GEN_BINARY_RMWcc(_ASM_SUB, l->a.counter, "er", i, "%0", e);
+	return GEN_BINARY_RMWcc(_ASM_SUB, l->a.counter, e, "er", i);
 }
 
 /**
@@ -65,7 +65,7 @@ static inline bool local_sub_and_test(long i, local_t *l)
  */
 static inline bool local_dec_and_test(local_t *l)
 {
-	GEN_UNARY_RMWcc(_ASM_DEC, l->a.counter, "%0", e);
+	return GEN_UNARY_RMWcc(_ASM_DEC, l->a.counter, e);
 }
 
 /**
@@ -78,7 +78,7 @@ static inline bool local_dec_and_test(local_t *l)
  */
 static inline bool local_inc_and_test(local_t *l)
 {
-	GEN_UNARY_RMWcc(_ASM_INC, l->a.counter, "%0", e);
+	return GEN_UNARY_RMWcc(_ASM_INC, l->a.counter, e);
 }
 
 /**
@@ -92,7 +92,7 @@ static inline bool local_inc_and_test(local_t *l)
  */
 static inline bool local_add_negative(long i, local_t *l)
 {
-	GEN_BINARY_RMWcc(_ASM_ADD, l->a.counter, "er", i, "%0", s);
+	return GEN_BINARY_RMWcc(_ASM_ADD, l->a.counter, s, "er", i);
 }
 
 /**
