@@ -99,7 +99,7 @@ enum mem_cgroup_events_target {
 
 struct mem_cgroup_id {
 	int id;
-	atomic_t ref;
+	refcount_t ref;
 };
 
 struct mem_cgroup_stat_cpu {
