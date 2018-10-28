@@ -13,3 +13,6 @@ config ZRAM
 	  disks and maybe many more.
 
 	  See zram.txt for more information.
+
+config ZRAM_HIDE_LZO
+	bool "Hide LZO compression algorithm in available compression list"
