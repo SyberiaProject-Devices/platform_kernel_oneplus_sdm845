@@ -281,7 +281,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
 {
 #if 0
 	struct zram *zram = dev_to_zram(dev);
-	char compressor[ARRAY_SIZE(zram->compressor)];
+	char compressor[CRYPTO_MAX_ALG_NAME];
 	size_t sz;
 
 	strlcpy(compressor, buf, sizeof(compressor));
@@ -300,7 +300,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
 		return -EBUSY;
 	}
 
-	strcpy(zram->compressor, compressor);
+	strlcpy(zram->compressor, compressor, sizeof(compressor));
 	up_write(&zram->init_lock);
 #endif
 	return len;
