@@ -3933,7 +3933,6 @@ int dsi_panel_enable(struct dsi_panel *panel)
 			  }
 
 	pr_err("end\n");
-	pm_print_active_wakeup_sources_queue(false);
 	return rc;
 }
 
@@ -4032,7 +4031,6 @@ error:
 	mutex_unlock(&panel->panel_lock);
 	pr_err("end\n");
 	/* add print actvie ws */
-	pm_print_active_wakeup_sources_queue(true);
 	return rc;
 }
 
