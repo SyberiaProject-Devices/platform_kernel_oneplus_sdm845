@@ -7699,7 +7699,7 @@ void hdd_ipa_fw_rejuvenate_send_msg(hdd_context_t *hdd_ctx)
 		HDD_IPA_LOG(QDF_TRACE_LEVEL_DEBUG, "msg allocation failed");
 		return;
 	}
-	meta.msg_type = WLAN_FWR_SSR_BEFORE_SHUTDOWN;
+	meta.msg_type = IPA_SSR_BEFORE_SHUTDOWN;
 	HDD_IPA_LOG(QDF_TRACE_LEVEL_DEBUG, "ipa_send_msg(Evt:%d)",
 		    meta.msg_type);
 	ret = ipa_send_msg(&meta, msg, hdd_ipa_msg_free_fn);
