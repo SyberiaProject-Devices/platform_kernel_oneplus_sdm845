@@ -117,6 +117,9 @@ struct fp_underscreen_info {
     uint16_t y;
 };
 
+#define PM_QOS_VALUE_TP 400
+struct pm_qos_request pm_qos_req_tp;
+
 /******************for Red function*****************/
 #define CONFIG_SYNAPTIC_RED
 
@@ -1898,6 +1901,9 @@ static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 	uint8_t status = 0;
 	uint8_t inte = 0;
 
+	pm_qos_add_request(&pm_qos_req_tp, PM_QOS_CPU_DMA_LATENCY,
+		PM_QOS_VALUE_TP);
+
 	if (unlikely(atomic_read(&ts->is_stop) == 1)) {
 		touch_disable(ts);
 		return IRQ_HANDLED;
@@ -1905,9 +1911,6 @@ static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 
 	if (unlikely(ts->enable_remote))
 		goto END;
-
-	/* prevent CPU from entering deep sleep */
-	pm_qos_update_request(&ts->pm_qos_req, 100);
 
 	synaptics_rmi4_i2c_write_byte(ts->client, 0xff, 0x00);
 	ret = synaptics_rmi4_i2c_read_word(ts->client, F01_RMI_DATA_BASE);
@@ -1980,7 +1983,7 @@ static irqreturn_t synaptics_irq_thread_fn(int irq, void *dev_id)
 
 
 END:
-	pm_qos_update_request(&ts->pm_qos_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_remove_request(&pm_qos_req_tp);
 
 	return IRQ_HANDLED;
 }
