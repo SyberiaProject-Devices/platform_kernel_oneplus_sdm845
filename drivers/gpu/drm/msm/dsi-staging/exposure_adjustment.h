@@ -26,6 +26,7 @@
  * @ELVSS_OFF_THRESHOLD: Minimum backlight threshold for disable smart elvss
  * @EXPOSURE_ADJUSTMENT_MIN: Minimum available PCC coefficient for OLED panel
  */
+
 #define EA_UDFP_WORKAROUND
 #define EA_UDFP_UNLOCK_DELAY       100
 #define ELVSS_OFF_THRESHOLD        258
@@ -39,6 +40,8 @@
 
 void ea_panel_mode_ctrl(struct dsi_panel *panel, bool enable);
 u32 ea_panel_calc_backlight(u32 bl_lvl);
+unsigned int ea_panel_on (void);
+void ea_panel_set (unsigned int on_off);
 #ifdef EA_UDFP_WORKAROUND
 void ea_panel_udfp_workaround(void);
 #endif

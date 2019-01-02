@@ -25,10 +25,26 @@
 #include "../sde/sde_crtc.h"
 #include "../sde/sde_plane.h"
 #include "exposure_adjustment.h"
+#include <linux/moduleparam.h>
 
 static struct drm_msm_pcc pcc_blk = {0};
 static bool pcc_backlight_enable = false;
 static u32 last_level = ELVSS_OFF_THRESHOLD;
+static __read_mostly unsigned int flickerfree_enabled=0;
+unsigned int flickerfree_enabled_set=0;
+
+module_param(flickerfree_enabled, uint, 0644);
+
+unsigned int ea_panel_on (void) {
+	if (flickerfree_enabled_set!=flickerfree_enabled)
+		return flickerfree_enabled_set;
+	else 
+		return flickerfree_enabled;
+}
+
+void ea_panel_set (unsigned int on_off) {
+	flickerfree_enabled=on_off;
+}
 
 static int ea_panel_crtc_send_pcc(struct dsi_display *display,
 			       u32 r_data, u32 g_data, u32 b_data)

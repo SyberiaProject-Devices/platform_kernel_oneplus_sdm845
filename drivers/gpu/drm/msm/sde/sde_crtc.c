@@ -2842,8 +2842,10 @@ int oneplus_dim_status = 0;
     }
 
     if (dim_status == oneplus_dim_status) {
-		if (dim_status == 0)
+#ifdef EA_UDFP_WORKAROUND
+		if (dim_status == 0 && ea_panel_on())
 			ea_panel_udfp_workaround();
+#endif
 		return count;
     }
 	oneplus_dim_status = dim_status;
