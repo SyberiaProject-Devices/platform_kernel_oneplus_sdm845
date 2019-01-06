@@ -31,19 +31,20 @@ static struct drm_msm_pcc pcc_blk = {0};
 static bool pcc_backlight_enable = false;
 static u32 last_level = ELVSS_OFF_THRESHOLD;
 static __read_mostly unsigned int flickerfree_enabled=0;
-unsigned int flickerfree_enabled_set=0;
+static __read_mostly unsigned int flickerfree_night=1;
 
 module_param(flickerfree_enabled, uint, 0644);
+//module_param(flickerfree_night, uint, 0644);
 
 unsigned int ea_panel_on (void) {
-	if (flickerfree_enabled_set!=flickerfree_enabled)
-		return flickerfree_enabled_set;
-	else 
+	if (flickerfree_enabled == 0)
 		return flickerfree_enabled;
+	else 
+		return flickerfree_night;
 }
 
 void ea_panel_set (unsigned int on_off) {
-	flickerfree_enabled=on_off;
+	flickerfree_night=on_off;
 }
 
 static int ea_panel_crtc_send_pcc(struct dsi_display *display,
