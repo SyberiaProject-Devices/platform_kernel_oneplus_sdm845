@@ -1513,21 +1513,6 @@ static struct ctl_table vm_table[] = {
 		.extra2		= &one_hundred,
 	},
 	{
-		.procname	= "breath_period",
-		.data		= &vm_breath_period,
-		.maxlen		= sizeof(vm_breath_period),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &zero,
-	},
-	{
-		.procname	= "breath_priority",
-		.data		= &vm_breath_priority,
-		.maxlen		= sizeof(vm_breath_priority),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
-	{
 		.procname       = "want_old_faultaround_pte",
 		.data           = &want_old_faultaround_pte,
 		.maxlen         = sizeof(want_old_faultaround_pte),
