@@ -179,12 +179,6 @@
 #define HAP_WAVE_PLAY_RATE_US_MAX	20475
 #define HAP_MAX_PLAY_TIME_MS		15000
 
-int ignore_next_request = 0;
-void qpnp_hap_ignore_next_request(void)
-{
-	ignore_next_request = 1;
-}
-
 /* haptic debug register set */
 static u8 qpnp_hap_dbg_regs[] = {
 	0x0a, 0x0b, 0x0c, 0x46, 0x48, 0x4c, 0x4d, 0x4e, 0x4f, 0x51, 0x52, 0x53,
@@ -1657,14 +1651,6 @@ static ssize_t qpnp_haptics_store_activate(struct device *dev,
 
 	if (val != 0 && val != 1)
 		return count;
-
-	if (chip->vmax_mv <= HAP_VMAX_MIN_MV && (val != 0))
-		return count;
-
-	if ((ignore_next_request) && (val != 0)) {
-		ignore_next_request = 0;
-		return count;
-	}
 
 	if (val) {
 		hrtimer_cancel(&chip->stop_timer);
