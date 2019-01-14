@@ -1,14 +1,5 @@
 /*
- * Copyright (C) 2018, Sultan Alsawaf <sultanxda@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Copyright (C) 2018-2019 Sultan Alsawaf <sultan@kerneltoast.com>.
  */
 
 #define pr_fmt(fmt) "devfreq_boost: " fmt
@@ -17,6 +8,21 @@
 #include <linux/input.h>
 #include <linux/slab.h>
 #include <linux/msm_drm_notify.h>
+
+struct boost_dev {
+	struct workqueue_struct *wq;
+	struct devfreq *df;
+	struct work_struct input_boost;
+	struct delayed_work input_unboost;
+	struct work_struct max_boost;
+	struct delayed_work max_unboost;
+	unsigned long abs_min_freq;
+	unsigned long boost_freq;
+	unsigned long max_boost_expires;
+	unsigned long max_boost_jiffies;
+	bool disable;
+	spinlock_t lock;
+};
 
 struct df_boost_drv {
 	struct boost_dev devices[DEVFREQ_MAX];
@@ -97,16 +103,6 @@ void devfreq_register_boost_device(enum df_device device, struct devfreq *df)
 	spin_lock_irqsave(&b->lock, flags);
 	b->df = df;
 	spin_unlock_irqrestore(&b->lock, flags);
-}
-
-struct boost_dev *devfreq_get_boost_dev(enum df_device device)
-{
-	struct df_boost_drv *d = df_boost_drv_g;
-
-	if (!d)
-		return NULL;
-
-	return d->devices + device;
 }
 
 static unsigned long devfreq_abs_min_freq(struct boost_dev *b)
