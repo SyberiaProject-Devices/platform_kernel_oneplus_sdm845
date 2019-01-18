@@ -1816,7 +1816,7 @@ struct task_struct {
 #endif
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	void *stack;
-	atomic_t usage;
+	refcount_t usage;
 	unsigned int flags;	/* per process flags, defined below */
 	unsigned int ptrace;
 
@@ -2615,7 +2615,7 @@ extern void __put_task_struct(struct task_struct *t);
 
 static inline void put_task_struct(struct task_struct *t)
 {
-	if (atomic_dec_and_test(&t->usage))
+	if (refcount_dec_and_test(&t->usage))
 		__put_task_struct(t);
 }
 
