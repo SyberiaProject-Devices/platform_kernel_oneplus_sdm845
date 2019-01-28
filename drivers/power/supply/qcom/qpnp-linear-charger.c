@@ -161,6 +161,7 @@ enum {
 	SOC	= BIT(3),
 	PARALLEL = BIT(4),
 	COLLAPSE = BIT(5),
+	DEBUG_BOARD = BIT(6),
 };
 
 enum bpd_type {
@@ -208,14 +209,19 @@ static enum power_supply_property msm_batt_power_props[] = {
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+	POWER_SUPPLY_PROP_CYCLE_COUNT,
+	POWER_SUPPLY_PROP_CHARGE_FULL,
+	POWER_SUPPLY_PROP_DEBUG_BATTERY,
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_COOL_TEMP,
 	POWER_SUPPLY_PROP_WARM_TEMP,
-	POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL,
+	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
+	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX,
 };
 
 static char *pm_batt_supplied_to[] = {
@@ -349,6 +355,7 @@ struct qpnp_lbc_chip {
 	bool				cfg_use_external_charger;
 	bool				cfg_chgr_led_support;
 	bool				non_collapsible_chgr_detected;
+	bool				debug_board;
 	unsigned int			cfg_warm_bat_chg_ma;
 	unsigned int			cfg_cool_bat_chg_ma;
 	unsigned int			cfg_safe_voltage_mv;
@@ -1351,6 +1358,23 @@ static int get_prop_capacity(struct qpnp_lbc_chip *chip)
 	return DEFAULT_CAPACITY;
 }
 
+static int get_bms_property(struct qpnp_lbc_chip *chip,
+				enum power_supply_property psy_prop)
+{
+	union power_supply_propval ret = {0,};
+
+	if (!chip->bms_psy)
+		chip->bms_psy = power_supply_get_by_name("bms");
+
+	if (chip->bms_psy)  {
+		power_supply_get_property(chip->bms_psy, psy_prop, &ret);
+		return ret.intval;
+	}
+	pr_debug("No BMS supply registered\n");
+
+	return -EINVAL;
+}
+
 static int get_prop_charge_count(struct qpnp_lbc_chip *chip)
 {
 	union power_supply_propval ret = {0,};
@@ -1472,6 +1496,9 @@ static int qpnp_lbc_configure_jeita(struct qpnp_lbc_chip *chip,
 		return -EINVAL;
 	}
 
+	if (chip->cfg_use_fake_battery)
+		return 0;
+
 	mutex_lock(&chip->jeita_configure_lock);
 	switch (psp) {
 	case POWER_SUPPLY_PROP_COOL_TEMP:
@@ -1533,7 +1560,7 @@ static int qpnp_batt_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_COOL_TEMP:
 	case POWER_SUPPLY_PROP_VOLTAGE_MIN:
 	case POWER_SUPPLY_PROP_WARM_TEMP:
-	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
 		return 1;
 	default:
 		break;
@@ -1634,10 +1661,15 @@ static int qpnp_batt_power_set_property(struct power_supply *psy,
 		rc = qpnp_lbc_charger_enable(chip, USER,
 						!chip->cfg_charging_disabled);
 		break;
+	case POWER_SUPPLY_PROP_DEBUG_BATTERY:
+		chip->debug_board = val->intval;
+		rc = qpnp_lbc_charger_enable(chip, DEBUG_BOARD,
+						!(val->intval));
+		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MIN:
 		qpnp_lbc_vinmin_set(chip, val->intval / 1000);
 		break;
-	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
 		qpnp_lbc_system_temp_level_set(chip, val->intval);
 		break;
 	default:
@@ -1673,6 +1705,9 @@ static int qpnp_batt_power_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
 		val->intval = chip->cfg_min_voltage_mv * 1000;
 		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		val->intval = chip->cfg_max_voltage_mv * 1000;
+		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = get_prop_battery_voltage_now(chip);
 		break;
@@ -1694,11 +1729,23 @@ static int qpnp_batt_power_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		val->intval = get_prop_charge_count(chip);
 		break;
+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+		val->intval = get_bms_property(chip, psp);
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		val->intval = get_bms_property(chip, psp);
+		break;
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		val->intval = !(chip->cfg_charging_disabled);
 		break;
-	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
+	case POWER_SUPPLY_PROP_DEBUG_BATTERY:
+		val->intval = chip->debug_board;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
 		val->intval = chip->therm_lvl_sel;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX:
+		val->intval = chip->cfg_thermal_levels;
 		break;
 	default:
 		return -EINVAL;
@@ -1790,8 +1837,9 @@ static enum power_supply_property qpnp_lbc_usb_properties[] = {
 	POWER_SUPPLY_PROP_TYPE,
 	POWER_SUPPLY_PROP_REAL_TYPE,
 	POWER_SUPPLY_PROP_SDP_CURRENT_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
 };
-
+#define MICRO_5V        5000000
 static int qpnp_lbc_usb_get_property(struct power_supply *psy,
 				  enum power_supply_property psp,
 				  union power_supply_propval *val)
@@ -1823,6 +1871,12 @@ static int qpnp_lbc_usb_get_property(struct power_supply *psy,
 		if (chip->usb_present &&
 			(chip->usb_supply_type != POWER_SUPPLY_TYPE_UNKNOWN))
 			val->intval = chip->usb_supply_type;
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		if (chip->usb_present)
+			val->intval = MICRO_5V;
+		else
+			val->intval = 0;
 		break;
 	default:
 		return -EINVAL;
@@ -2634,15 +2688,15 @@ static irqreturn_t qpnp_lbc_batt_pres_irq_handler(int irq, void *_chip)
 		power_supply_changed(chip->batt_psy);
 
 		if ((chip->cfg_cool_bat_decidegc
-					|| chip->cfg_warm_bat_decidegc)
-					&& batt_present) {
+			|| chip->cfg_warm_bat_decidegc)
+			&& batt_present && !chip->cfg_use_fake_battery) {
 			pr_debug("enabling vadc notifications\n");
 			if (qpnp_adc_tm_channel_measure(chip->adc_tm_dev,
 						&chip->adc_param))
 				pr_err("request ADC error\n");
 		} else if ((chip->cfg_cool_bat_decidegc
-					|| chip->cfg_warm_bat_decidegc)
-					&& !batt_present) {
+			|| chip->cfg_warm_bat_decidegc)
+			&& !batt_present && !chip->cfg_use_fake_battery) {
 			qpnp_adc_tm_disable_chan_meas(chip->adc_tm_dev,
 					&chip->adc_param);
 			pr_debug("disabling vadc notifications\n");
@@ -2877,7 +2931,8 @@ static int qpnp_lbc_request_irqs(struct qpnp_lbc_chip *chip)
 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, 1);
 
 	REQUEST_IRQ(chip, USBIN_VALID, rc, usbin_valid, 1,
-			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, 1);
+			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
+			| IRQF_ONESHOT, 1);
 
 	REQUEST_IRQ(chip, USB_CHG_GONE, rc, chg_gone, 0,
 			IRQF_TRIGGER_RISING, 1);
@@ -3397,7 +3452,7 @@ static int qpnp_lbc_main_probe(struct platform_device *pdev)
 	}
 
 	if ((chip->cfg_cool_bat_decidegc || chip->cfg_warm_bat_decidegc)
-			&& chip->bat_if_base) {
+			&& chip->bat_if_base && !chip->cfg_use_fake_battery) {
 		chip->adc_param.low_temp = chip->cfg_cool_bat_decidegc;
 		chip->adc_param.high_temp = chip->cfg_warm_bat_decidegc;
 		chip->adc_param.timer_interval = ADC_MEAS1_INTERVAL_1S;

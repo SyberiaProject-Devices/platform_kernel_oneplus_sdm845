@@ -53,6 +53,7 @@
 
 #define IPA_WWAN_DEV_NAME "rmnet_ipa%d"
 #define IPA_UPSTEAM_WLAN_IFACE_NAME "wlan0"
+#define IPA_UPSTEAM_WLAN1_IFACE_NAME "wlan1"
 
 #define IPA_WWAN_RX_SOFTIRQ_THRESH 16
 
@@ -820,7 +821,8 @@ static enum ipa_upstream_type find_upstream_type(const char *upstreamIface)
 			return IPA_UPSTEAM_MODEM;
 	}
 
-	if (strcmp(IPA_UPSTEAM_WLAN_IFACE_NAME, upstreamIface) == 0)
+	if ((strcmp(IPA_UPSTEAM_WLAN_IFACE_NAME, upstreamIface) == 0) ||
+		(strcmp(IPA_UPSTEAM_WLAN1_IFACE_NAME, upstreamIface) == 0))
 		return IPA_UPSTEAM_WLAN;
 	else
 		return MAX_NUM_OF_MUX_CHANNEL;
@@ -1073,8 +1075,12 @@ static int __ipa_wwan_close(struct net_device *dev)
  */
 static int ipa3_wwan_stop(struct net_device *dev)
 {
+	struct ipa3_wwan_private *wwan_ptr = netdev_priv(dev);
+
 	IPAWANDBG("[%s] ipa3_wwan_stop()\n", dev->name);
 	__ipa_wwan_close(dev);
+	if (ipa3_rmnet_res.ipa_napi_enable)
+		napi_disable(&(wwan_ptr->napi));
 	netif_stop_queue(dev);
 	return 0;
 }
