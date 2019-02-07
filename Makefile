@@ -520,6 +520,7 @@ endif
 CLANG_FLAGS	+= -no-integrated-as
 ifneq ($(shell $(LD) --version 2>&1 | head -n 1 | grep LLD),)
 CLANG_FLAGS	+= -fuse-ld=lld
+KBUILD_LDFLAGS	+= -O2
 endif
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 KBUILD_AFLAGS	+= $(CLANG_FLAGS)
