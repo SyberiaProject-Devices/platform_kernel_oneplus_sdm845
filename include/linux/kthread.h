@@ -183,8 +183,7 @@ extern void __kthread_init_worker(struct kthread_worker *worker,
 		kthread_init_work(&(dwork)->work, (fn));		\
 		__setup_timer(&(dwork)->timer,				\
 			      kthread_delayed_work_timer_fn,		\
-			      (unsigned long)(dwork),			\
-			      TIMER_IRQSAFE);				\
+			      (unsigned long)(dwork), 0);		\
 	} while (0)
 
 /*
