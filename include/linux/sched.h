@@ -1843,11 +1843,6 @@ struct task_struct {
 
 	struct list_head tasks;
 
-#ifdef CONFIG_ADJ_CHAIN
-	struct list_head adj_chain_tasks;
-	u32 adj_chain_status;
-#endif
-
 #ifdef CONFIG_SMP
 	struct plist_node pushable_tasks;
 	struct rb_node pushable_dl_tasks;
