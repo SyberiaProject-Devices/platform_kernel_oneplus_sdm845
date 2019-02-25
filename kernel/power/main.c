@@ -17,6 +17,7 @@
 #include <linux/seq_file.h>
 #include <linux/cpufreq.h>
 #include <linux/suspend.h>
+#include <linux/syscalls.h>
 
 #include "power.h"
 
@@ -51,6 +52,14 @@ void unlock_system_sleep(void)
 	mutex_unlock(&system_transition_mutex);
 }
 EXPORT_SYMBOL_GPL(unlock_system_sleep);
+
+void ksys_sync_helper(void)
+{
+	pr_info("Syncing filesystems ... ");
+	ksys_sync();
+	pr_cont("done.\n");
+}
+EXPORT_SYMBOL_GPL(ksys_sync_helper);
 
 /* Routines for PM-transition notifications */
 
