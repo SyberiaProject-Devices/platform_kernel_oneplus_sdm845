@@ -66,7 +66,7 @@
 
 /* 16 encoder and 16 decoder sessions */
 #define VIDC_MAX_SESSIONS               32
-#define MAX_SUPPORTED_INSTANCES 16
+#define MAX_SUPPORTED_INSTANCES         16
 #define VIDC_MAX_DECODE_SESSIONS        16
 #define VIDC_MAX_ENCODE_SESSIONS        16
 
