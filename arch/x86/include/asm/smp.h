@@ -149,6 +149,20 @@ void smp_store_cpu_info(int id);
 #define cpu_physical_id(cpu)	per_cpu(x86_cpu_to_apicid, cpu)
 #define cpu_acpi_id(cpu)	per_cpu(x86_cpu_to_acpiid, cpu)
 
+/*
+ * This function is needed by all SMP systems. It must _always_ be valid
+ * from the initial startup. We map APIC_BASE very early in page_setup(),
+ * so this is correct in the x86 case.
+ */
+#define raw_smp_processor_id()  this_cpu_read(cpu_number)
+#define __smp_processor_id() __this_cpu_read(cpu_number)
+
+#ifdef CONFIG_X86_32
+extern int safe_smp_processor_id(void);
+#else
+# define safe_smp_processor_id()	smp_processor_id()
+#endif
+
 #else /* !CONFIG_SMP */
 #define wbinvd_on_cpu(cpu)     wbinvd()
 static inline int wbinvd_on_all_cpus(void)
