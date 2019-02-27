@@ -1,5 +1,5 @@
 ifdef CONFIG_OEM_DEBUG_SUPPORT
-obj-y += sysrq_x.o
+obj-$(CONFIG_OEM_SYSRQ_X) += sysrq_x.o
 endif
 ifdef CONFIG_OEM_DEBUG_SUPPORT
 # oem trace
