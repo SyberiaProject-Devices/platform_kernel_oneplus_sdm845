@@ -1254,11 +1254,6 @@ static inline struct page *vm_normal_page(struct vm_area_struct *vma,
 	return __vm_normal_page(vma, addr, pte, vma->vm_flags);
 }
 
-static inline void INIT_VMA(struct vm_area_struct *vma)
-{
-	INIT_LIST_HEAD(&vma->anon_vma_chain);
-}
-
 struct page *vm_normal_page_pmd(struct vm_area_struct *vma, unsigned long addr,
 				pmd_t pmd);
 
