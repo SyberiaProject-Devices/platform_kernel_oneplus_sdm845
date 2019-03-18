@@ -692,7 +692,8 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
 {
 	struct clock_event_device *dev = __this_cpu_read(tick_cpu_device.evtdev);
 	u64 basemono, next_tick, next_tmr, next_rcu, delta, expires;
-	unsigned long seq, basejiff;
+	unsigned long basejiff;
+	unsigned int seq;
 	ktime_t	tick;
 
 	/* Read jiffies and the time when jiffies were updated last */
