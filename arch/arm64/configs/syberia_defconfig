@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.9.164 Kernel Configuration
+# Linux/arm64 4.9.165 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -655,7 +655,7 @@ CONFIG_INPUT_BOOST_FREQ_PERF=0
 CONFIG_INPUT_STUNE_BOOST=15
 CONFIG_REMOVE_INPUT_BOOST_FREQ_LP=0
 CONFIG_REMOVE_INPUT_BOOST_FREQ_PERF=0
-CONFIG_MAX_STUNE_BOOST=100
+CONFIG_MAX_STUNE_BOOST=15
 
 #
 # CPU frequency scaling drivers
