@@ -23,13 +23,6 @@ config M68K
 	select OLD_SIGSUSPEND3
 	select OLD_SIGACTION
 
-config RWSEM_GENERIC_SPINLOCK
-	bool
-	default y
-
-config RWSEM_XCHGADD_ALGORITHM
-	bool
-
 config ARCH_HAS_ILOG2_U32
 	bool
 
