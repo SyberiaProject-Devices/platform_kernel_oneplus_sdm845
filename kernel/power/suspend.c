@@ -438,7 +438,6 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	error = suspend_disable_secondary_cpus();
 	if (error || suspend_test(TEST_CPUS))
 		goto Enable_cpus;
-	}
 
 	arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
