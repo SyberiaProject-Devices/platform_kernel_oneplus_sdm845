@@ -28,7 +28,8 @@ $(warning ld does not support --fix-cortex-a53-843419; kernel may be susceptible
   else
     ifeq ($(call gold-ifversion, -lt, 114000000, y), y)
 $(warning This version of GNU gold may generate incorrect code with --fix-cortex-a53-843419;\
-	see https://sourceware.org/bugzilla/show_bug.cgi?id=21491)
+	see https://sourceware.org/bugzilla/show_bug.cgi?id=21491, this erratum will forcefully disabled)
+LDFLAGS_vmlinux	+= --no-fix-cortex-a53-843419
     endif
 LDFLAGS_vmlinux	+= --fix-cortex-a53-843419
   endif
