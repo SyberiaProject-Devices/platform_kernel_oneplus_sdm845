@@ -47,9 +47,6 @@
 #include <linux/oneplus/boot_mode.h>
 #include "gf_spi.h"
 
-#include <linux/cpu_input_boost.h>
-#include <linux/devfreq_boost.h>
-
 #if defined(USE_SPI_BUS)
 #include <linux/spi/spi.h>
 #include <linux/spi/spidev.h>
@@ -328,10 +325,6 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	char msg = GF_NET_EVENT_IRQ;
 	//wake_lock_timeout(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
 	__pm_wakeup_event(&fp_wakelock, WAKELOCK_HOLD_TIME);
-
-	cpu_input_boost_kick_wake();
-	devfreq_boost_kick_wake(DEVFREQ_MSM_CPUBW);
-
 	sendnlmsg(&msg);
 #elif defined (GF_FASYNC)
 	struct gf_dev *gf_dev = &gf;
