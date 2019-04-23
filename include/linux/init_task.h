@@ -226,7 +226,8 @@ extern struct task_group root_task_group;
 	.static_prio	= MAX_PRIO-20,					\
 	.normal_prio	= MAX_PRIO-20,					\
 	.policy		= SCHED_NORMAL,					\
-	.cpus_allowed	= CPU_MASK_ALL,					\
+	.cpus_ptr	= &init_task.cpus_mask,				\
+	.cpus_mask	= CPU_MASK_ALL,					\
 	.nr_cpus_allowed= NR_CPUS,					\
 	.cpus_requested	= CPU_MASK_ALL,					\
 	.mm		= NULL,						\

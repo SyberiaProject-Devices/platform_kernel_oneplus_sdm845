@@ -1769,7 +1769,8 @@ struct task_struct {
 
 	unsigned int policy;
 	int nr_cpus_allowed;
-	cpumask_t cpus_allowed;
+	const cpumask_t *cpus_ptr;
+	cpumask_t cpus_mask;
 	cpumask_t cpus_requested;
 
 #ifdef CONFIG_PREEMPT_RCU
@@ -2591,7 +2592,7 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, u64 *ut, u64 *s
 #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
 #define PF_PERF_CRITICAL 0x01000000	/* Thread is performance-critical */
 #define PF_MEMSTALL	0x02000000	/* Stalled due to lack of memory */
-#define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_allowed */
+#define PF_NO_SETAFFINITY 0x04000000	/* Userland is not allowed to meddle with cpus_mask */
 #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
 #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
 #define PF_FREEZER_SKIP	0x40000000	/* Freezer should not count it as freezable */
