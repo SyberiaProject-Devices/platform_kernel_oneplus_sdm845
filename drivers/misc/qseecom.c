@@ -1982,6 +1982,7 @@ exit:
 			__qseecom_disable_clk(CLK_QSEE);
 
 	}
+	wake_up_interruptible_all(&qseecom.app_block_wq);
 	qseecom.app_block_ref_cnt--;
 	wake_up_interruptible_all(&qseecom.app_block_wq);
 	if (rc)
