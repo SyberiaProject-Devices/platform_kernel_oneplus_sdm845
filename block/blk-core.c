@@ -1760,9 +1760,7 @@ get_rq:
 		if (!request_count || list_empty(&plug->list))
 			trace_block_plug(q);
 		else {
-			struct request *last = list_entry_rq(plug->list.prev);
-			if (request_count >= BLK_MAX_REQUEST_COUNT ||
-			    blk_rq_bytes(last) >= BLK_PLUG_FLUSH_SIZE) {
+			if (request_count >= BLK_MAX_REQUEST_COUNT) {
 				blk_flush_plug_list(plug, false);
 				trace_block_plug(q);
 			}
