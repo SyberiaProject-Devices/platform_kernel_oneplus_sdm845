@@ -222,6 +222,7 @@ struct lock_chain {
  * bitfield and hitting the BUG in hlock_class().
  */
 #define MAX_LOCKDEP_KEYS		((1UL << MAX_LOCKDEP_KEYS_BITS) - 1)
+#define INITIAL_CHAIN_KEY		0
 
 struct held_lock {
 	/*
@@ -385,7 +386,7 @@ extern void lock_repin_lock(struct lockdep_map *lock, struct pin_cookie);
 extern void lock_unpin_lock(struct lockdep_map *lock, struct pin_cookie);
 
 # define INIT_LOCKDEP		.lockdep_depth = 0, /* no locks held yet */	\
-				.curr_chain_key = 0,				\
+				.curr_chain_key = INITIAL_CHAIN_KEY,		\
 				.lockdep_recursion = 0,				\
 				.lockdep_reclaim_gfp = 0,
 
