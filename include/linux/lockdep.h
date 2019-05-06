@@ -280,6 +280,8 @@ extern void lockdep_free_key_range(void *start, unsigned long size);
 extern asmlinkage void lockdep_sys_exit(void);
 extern void lockdep_set_selftest_task(struct task_struct *task);
 
+extern void lockdep_init_task(struct task_struct *task);
+
 extern void lockdep_off(void);
 extern void lockdep_on(void);
 
@@ -382,7 +384,10 @@ extern struct pin_cookie lock_pin_lock(struct lockdep_map *lock);
 extern void lock_repin_lock(struct lockdep_map *lock, struct pin_cookie);
 extern void lock_unpin_lock(struct lockdep_map *lock, struct pin_cookie);
 
-# define INIT_LOCKDEP				.lockdep_recursion = 0, .lockdep_reclaim_gfp = 0,
+# define INIT_LOCKDEP		.lockdep_depth = 0, /* no locks held yet */	\
+				.curr_chain_key = 0,				\
+				.lockdep_recursion = 0,				\
+				.lockdep_reclaim_gfp = 0,
 
 #define lockdep_depth(tsk)	(debug_locks ? (tsk)->lockdep_depth : 0)
 
@@ -409,6 +414,10 @@ extern void lock_unpin_lock(struct lockdep_map *lock, struct pin_cookie);
 #define lockdep_unpin_lock(l,c)	lock_unpin_lock(&(l)->dep_map, (c))
 
 #else /* !CONFIG_LOCKDEP */
+
+static inline void lockdep_init_task(struct task_struct *task)
+{
+}
 
 static inline void lockdep_off(void)
 {
@@ -503,7 +512,6 @@ enum xhlock_context_t {
 static inline void crossrelease_hist_start(enum xhlock_context_t c) {}
 static inline void crossrelease_hist_end(enum xhlock_context_t c) {}
 static inline void lockdep_invariant_state(bool force) {}
-static inline void lockdep_init_task(struct task_struct *task) {}
 static inline void lockdep_free_task(struct task_struct *task) {}
 
 #ifdef CONFIG_LOCK_STAT
