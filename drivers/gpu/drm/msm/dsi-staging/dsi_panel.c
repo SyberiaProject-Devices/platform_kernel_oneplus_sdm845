@@ -575,18 +575,14 @@ static int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 		return 0;
 
 #ifdef CONFIG_EXPOSURE_ADJUSTMENT
-	if (ea_panel_on()){
-		if (type == DSI_CMD_SET_SRGB_ON ||
-			type == DSI_CMD_SET_DCI_P3_ON ||
-			type == DSI_CMD_SET_ONEPLUS_MODE_ON)
-			ea_panel_mode_ctrl(panel, true);
-		else if ((type > DSI_CMD_SET_POST_TIMING_SWITCH &&
-			type < DSI_CMD_SET_PANEL_SERIAL_NUMBER) ||
-			type > DSI_CMD_READ_SAMSUNG_PANEL_REGISTER_OFF ||
-			type < DSI_CMD_SET_CMD_TO_VID_SWITCH)
-			ea_panel_mode_ctrl(panel, false);
+	if (ea_panel_on()) {
+	    if (type == DSI_CMD_SET_ON)
+		ea_panel_mode_ctrl(panel, true);
+	    else if (type == DSI_CMD_SET_OFF)
+		ea_panel_mode_ctrl(panel, false);
 	}
 #endif
+
 	mode = panel->cur_mode;
 
 	cmds = mode->priv_info->cmd_sets[type].cmds;
