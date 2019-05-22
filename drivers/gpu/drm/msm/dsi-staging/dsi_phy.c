@@ -865,29 +865,6 @@ error:
 	return rc;
 }
 
-/* update dsi phy timings for dynamic clk switch use case */
-int dsi_phy_update_phy_timings(struct msm_dsi_phy *phy,
-			       struct dsi_host_config *config)
-{
-	int rc = 0;
-
-	if (!phy || !config) {
-		pr_err("invalid argument\n");
-		return -EINVAL;
-	}
-
-	memcpy(&phy->mode, &config->video_timing, sizeof(phy->mode));
-	rc = phy->hw.ops.calculate_timing_params(&phy->hw, &phy->mode,
-						 &config->common_config,
-						 &phy->cfg.timing, true);
-	if (rc)
-		pr_err("failed to calculate phy timings %d\n", rc);
-	else
-		phy->cfg.is_phy_timing_present = true;
-
-	return rc;
-}
-
 int dsi_phy_lane_reset(struct msm_dsi_phy *phy)
 {
 	int ret = 0;

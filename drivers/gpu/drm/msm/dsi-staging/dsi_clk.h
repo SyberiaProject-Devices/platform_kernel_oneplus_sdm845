@@ -329,12 +329,6 @@ int dsi_clk_req_state(void *client, enum dsi_clk_type clk,
 	enum dsi_clk_state state);
 
 /**
- * dsi_clk_disable_unprepare() - disable and unprepare dsi src clocks
- * @clk:       list of src clocks.
- */
-void dsi_clk_disable_unprepare(struct dsi_clk_link_set *clk);
-
-/**
  * dsi_clk_req_state() - request to change dsi clock state
  * @client:       DSI clocl client pointer.
  * @clk:          DSI clock list.
