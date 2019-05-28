@@ -1770,6 +1770,11 @@ static int find_lowest_rq(struct task_struct *task)
 
 		placement_boost = sched_boost() == FULL_THROTTLE_BOOST ?
 				  sched_boost_policy() : SCHED_BOOST_NONE;
+
+		/* For surfaceflinger with util > 90, prefer to use big core */
+		if (task->compensate_need == 2 && tutil > 90)
+			placement_boost = true;
+
 		best_capacity = placement_boost ? 0 : ULONG_MAX;
 
 		rcu_read_lock();

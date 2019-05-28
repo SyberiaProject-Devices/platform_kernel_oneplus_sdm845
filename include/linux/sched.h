@@ -1711,6 +1711,8 @@ struct task_struct {
 
     bool dump_fd_leak;
 
+    int compensate_need;
+
 #ifdef CONFIG_SMP
 	struct llist_node wake_entry;
 	int on_cpu;
