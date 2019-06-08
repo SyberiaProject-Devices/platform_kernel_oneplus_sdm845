@@ -2775,10 +2775,6 @@ static inline void calc_load_enter_idle(void) { }
 static inline void calc_load_exit_idle(void) { }
 #endif /* CONFIG_NO_HZ_COMMON */
 
-#ifndef cpu_relax_yield
-#define cpu_relax_yield(cpumask) cpu_relax()
-#endif
-
 extern unsigned long long
 task_sched_runtime(struct task_struct *task);
 
