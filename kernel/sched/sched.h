@@ -1984,6 +1984,17 @@ void arch_update_cpu_capacity(int cpu)
 #endif
 
 #ifdef CONFIG_SMP
+static inline unsigned long cpu_util_cfs(struct rq *rq)
+{
+	unsigned long util = READ_ONCE(rq->cfs.avg.util_avg);
+
+	if (sched_feat(UTIL_EST)) {
+		util = max_t(unsigned long, util,
+			 READ_ONCE(rq->cfs.avg.util_est.enqueued));
+	}
+
+	return util;
+}
 
 static inline unsigned long task_util(struct task_struct *p)
 {
@@ -2010,25 +2021,11 @@ enum schedutil_type {
     ENERGY_UTIL,
 };
 
-#ifdef CONFIG_SMP
-static inline unsigned long cpu_util_cfs(struct rq *rq)
-{
-    unsigned long util = READ_ONCE(rq->cfs.avg.util_avg);
-
-    if (sched_feat(UTIL_EST)) {
-	util = max_t(unsigned long, util,
-	         READ_ONCE(rq->cfs.avg.util_est.enqueued));
-    }
-
-    return util;
-}
-#endif
-
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
 
-unsigned long schedutil_freq_util(int cpu, unsigned long util,
-				unsigned long max, enum schedutil_type type,
-				struct task_struct *p);
+unsigned long schedutil_cpu_util(int cpu, unsigned long util_cfs,
+				 unsigned long max, enum schedutil_type type,
+				 struct task_struct *p);
 
 static inline unsigned long cpu_bw_dl(struct rq *rq)
 {
@@ -2045,19 +2042,13 @@ static inline unsigned long cpu_util_rt(struct rq *rq)
     return READ_ONCE(rq->avg_rt.util_avg);
 }
 
-static inline unsigned long schedutil_energy_util(int cpu, unsigned long util)
-{
-	unsigned long max = arch_scale_cpu_capacity(NULL, cpu);
-
-	return schedutil_freq_util(cpu, util, max, ENERGY_UTIL, NULL);
-}
-
 #else /* CONFIG_CPU_FREQ_GOV_SCHEDUTIL */
-static inline unsigned long schedutil_energy_util(int cpu, unsigned long cfs)
+static inline unsigned long schedutil_cpu_util(int cpu, unsigned long util_cfs,
+				 unsigned long max, enum schedutil_type type,
+				 struct task_struct *p)
 {
-	return cfs;
+	return 0;
 }
-
 #endif /* CONFIG_CPU_FREQ_GOV_SCHEDUTIL */
 
 /**

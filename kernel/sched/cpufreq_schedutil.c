@@ -247,7 +247,7 @@ schedtune_cpu_margin_with(unsigned long util, int cpu, struct task_struct *p);
  * based on the task model parameters and gives the minimal utilization
  * required to meet deadlines.
  */
-unsigned long schedutil_freq_util(int cpu, unsigned long util_cfs,
+unsigned long schedutil_cpu_util(int cpu, unsigned long util_cfs,
 				 unsigned long max, enum schedutil_type type,
 				 struct task_struct *p)
 {
@@ -337,8 +337,7 @@ static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 	sg_cpu->max = max;
 	sg_cpu->bw_dl = cpu_bw_dl(rq);
 
-	return schedutil_freq_util(sg_cpu->cpu, util_cfs, max,
-				  FREQUENCY_UTIL, NULL);
+	return schedutil_cpu_util(sg_cpu->cpu, util_cfs, max, FREQUENCY_UTIL, NULL);
 }
 
 /**
