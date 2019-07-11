@@ -1694,7 +1694,7 @@ static __always_inline void trace_iterator_reset(struct trace_iterator *iter)
 	 * Keep gcc from complaining about overwriting more than just one
 	 * member in the structure.
 	 */
-	memset((char *)(iter) + offset, 0, sizeof(struct trace_iterator) - offset);
+	memset((char *)iter + offset, 0, sizeof(struct trace_iterator) - offset);
 
 	iter->pos = -1;
 }
