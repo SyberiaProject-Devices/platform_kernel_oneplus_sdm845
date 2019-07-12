@@ -22,7 +22,6 @@
 
 #include "dsi_panel.h"
 #include "dsi_ctrl_hw.h"
-#include <linux/project_info.h>
 #include <linux/pm_wakeup.h>
 #include "../sde/sde_trace.h"
 
@@ -2851,9 +2850,6 @@ static int dsi_panel_parse_oem_config(struct dsi_panel *panel,
 	if (!panel_version)
 		pr_info("%s:%d, panel version not specified\n",
                 __func__, __LINE__);
-	push_component_info(LCD, (char *)panel_version,
-	                            (char *)panel_manufacture);
-
 	backlight_manufacture = of_get_property(of_node,
                     "qcom,mdss-dsi-backlight-manufacture", NULL);
 	if (!backlight_manufacture)
@@ -2864,9 +2860,6 @@ static int dsi_panel_parse_oem_config(struct dsi_panel *panel,
 	if (!backlight_version)
 		pr_info("%s:%d, backlight version not specified\n",
                     __func__, __LINE__);
-	push_component_info(BACKLIGHT, (char *)backlight_version,
-	                    (char *)backlight_manufacture);
-
 	panel->lp11_init =
 		of_property_read_bool(of_node, "qcom,mdss-dsi-lp11-init");
 	if (panel->lp11_init)

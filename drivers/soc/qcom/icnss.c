@@ -49,7 +49,6 @@
 #include <soc/qcom/service-notifier.h>
 #include <soc/qcom/socinfo.h>
 #include <soc/qcom/ramdump.h>
-#include <linux/project_info.h>
 static u32 fw_version;
 static u32 fw_version_ext;
 
@@ -4825,8 +4824,6 @@ static int icnss_probe(struct platform_device *pdev)
 	penv = priv;
 	device_create_file(&penv->pdev->dev,
 		 &dev_attr_cnss_version_information);
-	push_component_info(WCN, "WCN3990", "QualComm");
-
 	init_completion(&priv->unblock_shutdown);
 
 	icnss_pr_info("Platform driver probed successfully\n");

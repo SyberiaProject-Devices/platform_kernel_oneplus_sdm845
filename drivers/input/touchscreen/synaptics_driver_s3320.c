@@ -62,7 +62,6 @@
 #include <linux/input/mt.h>
 
 #include "synaptics_redremote.h"
-#include <linux/project_info.h>
 #include "synaptics_baseline.h"
 #include "synaptics_dsx_core.h"
 #include <linux/oneplus/boot_mode.h>
@@ -2688,7 +2687,6 @@ static ssize_t synaptics_rmi4_baseline_show_s3508(struct device *dev, char *buf,
      CURRENT_FIRMWARE_ID = (buf[0]<<24) | (buf[1]<<16) | (buf[2]<<8) | buf[3];
      TPD_ERR("[sk]CURRENT_FIRMWARE_ID = 0x%x\n", CURRENT_FIRMWARE_ID);
 	sprintf(ts->fw_id,"0x%x",CURRENT_FIRMWARE_ID);
-	push_component_info(TP, ts->fw_id, ts->manu_name);
 READDATA_AGAIN:
 	msleep(30);
 	mutex_lock(&ts->mutex);
@@ -3101,7 +3099,6 @@ static ssize_t synaptics_rmi4_baseline_show_s3706(
 	TPD_ERR("[sk]CURRENT_FIRMWARE_ID = 0x%lx\n",
 			CURRENT_FIRMWARE_ID);
 	snprintf(ts->fw_id, 20, "0x%lx", CURRENT_FIRMWARE_ID);
-	push_component_info(TP, ts->fw_id, ts->manu_name);
 READDATA_AGAIN:
 	msleep(30);
 	mutex_lock(&ts->mutex);
@@ -5963,9 +5960,6 @@ static int synaptics_ts_probe(struct i2c_client *client, const struct i2c_device
 			CURRENT_FIRMWARE_ID);
 	TP_FW = CURRENT_FIRMWARE_ID;
 	snprintf(ts->fw_id,  20, "0x%lx", TP_FW);
-
-	push_component_info(TOUCH_KEY, ts->fw_id, ts->manu_name);
-	push_component_info(TP, ts->fw_id, ts->manu_name);
 
 	synaptics_wq = create_singlethread_workqueue("synaptics_wq");
 	if( !synaptics_wq ){

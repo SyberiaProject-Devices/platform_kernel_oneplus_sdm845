@@ -14,8 +14,6 @@
 #include "ufshcd.h"
 #include "ufs_quirks.h"
 
-#include <linux/project_info.h>
-
 static struct ufs_card_fix ufs_fixups[] = {
 	/* UFS cards deviations table */
 	UFS_FIX(UFS_VENDOR_SAMSUNG, UFS_ANY_MODEL, UFS_DEVICE_NO_VCCQ),
@@ -148,7 +146,6 @@ int ufs_fill_info(struct ufs_hba *hba)
 	strcat(ufs_vendor_and_rev, " ");
 	strcat(ufs_vendor_and_rev, ufs_rev);
 
-	push_component_info(UFS, ufs_product_id, ufs_vendor_and_rev);
 out:
 	return err;
 
