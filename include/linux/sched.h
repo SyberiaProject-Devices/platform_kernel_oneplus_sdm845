@@ -898,6 +898,11 @@ extern struct user_struct root_user;
 struct backing_dev_info;
 struct reclaim_state;
 
+#ifdef CONFIG_SMP
+extern struct root_domain def_root_domain;
+extern struct mutex sched_domains_mutex;
+#endif
+
 #ifdef CONFIG_SCHED_INFO
 struct sched_info {
 	/* cumulative counters */

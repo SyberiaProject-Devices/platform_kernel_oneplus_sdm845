@@ -784,11 +784,6 @@ struct root_domain {
 	struct perf_domain __rcu *pd;
 };
 
-extern struct root_domain def_root_domain;
-extern void sched_get_rd(struct root_domain *rd);
-extern void sched_put_rd(struct root_domain *rd);
-extern struct mutex sched_domains_mutex;
-
 extern void init_defrootdomain(void);
 extern void init_max_cpu_capacity(struct max_cpu_capacity *mcc);
 extern int sched_init_domains(const struct cpumask *cpu_map);
