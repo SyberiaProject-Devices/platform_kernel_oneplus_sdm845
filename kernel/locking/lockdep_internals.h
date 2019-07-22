@@ -91,6 +91,7 @@ static const unsigned long LOCKF_USED_IN_IRQ_READ =
 #define MAX_LOCKDEP_ENTRIES	16384UL
 #define MAX_LOCKDEP_CHAINS_BITS	15
 #define MAX_STACK_TRACE_ENTRIES	262144UL
+#define STACK_TRACE_HASH_SIZE	8192
 #else
 #define MAX_LOCKDEP_ENTRIES	32768UL
 
@@ -101,6 +102,7 @@ static const unsigned long LOCKF_USED_IN_IRQ_READ =
  * addresses. Protected by the hash_lock.
  */
 #define MAX_STACK_TRACE_ENTRIES	524288UL
+#define STACK_TRACE_HASH_SIZE	16384
 #endif
 
 #define MAX_LOCKDEP_CHAINS	(1UL << MAX_LOCKDEP_CHAINS_BITS)
