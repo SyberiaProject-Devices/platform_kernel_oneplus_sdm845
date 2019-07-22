@@ -89,7 +89,8 @@ struct lock_class {
 	 */
 	struct list_head		lock_entry;
 
-	struct lockdep_subclass_key	*key;
+	const struct lockdep_subclass_key *key;
+
 	unsigned int			subclass;
 	unsigned int			dep_gen_id;
 

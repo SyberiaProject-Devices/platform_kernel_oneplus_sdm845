@@ -505,7 +505,7 @@ static const char *usage_str[] =
 	[LOCK_USED] = "INITIAL USE",
 };
 
-const char * __get_key_name(struct lockdep_subclass_key *key, char *str)
+const char *__get_key_name(const struct lockdep_subclass_key *key, char *str)
 {
 	return kallsyms_lookup((unsigned long)key, NULL, NULL, NULL, str);
 }
