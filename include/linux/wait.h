@@ -484,8 +484,8 @@ do {									\
 									\
 	hrtimer_init_on_stack(&__t.timer, CLOCK_MONOTONIC,		\
 			      HRTIMER_MODE_REL);			\
-	hrtimer_init_sleeper(&__t, current);				\
-	if ((timeout) != KTIME_MAX)				\
+	hrtimer_init_sleeper(&__t);					\
+	if ((timeout) != KTIME_MAX)					\
 		hrtimer_start_range_ns(&__t.timer, timeout,		\
 				       current->timer_slack_ns,		\
 				       HRTIMER_MODE_REL);		\
