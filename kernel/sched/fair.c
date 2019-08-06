@@ -5723,7 +5723,6 @@ struct energy_env {
 };
 
 static int cpu_util_wake(int cpu, struct task_struct *p);
-static int boosted_cpu_util_wake(int cpu, struct task_struct *p);
 
 /*
  * __cpu_norm_util() returns the cpu util relative to a specific capacity,
@@ -6412,18 +6411,7 @@ boosted_task_util(struct task_struct *p)
 
 static unsigned long capacity_spare_wake(int cpu, struct task_struct *p)
 {
-	return max_t(long, capacity_of(cpu) - boosted_cpu_util_wake(cpu, p), 0);
-}
-
-static int boosted_cpu_util_wake(int cpu, struct task_struct *p)
-{
-	unsigned long util;
-	long margin;
-
-	util = cpu_util_wake(cpu, p);
-	margin = schedtune_cpu_margin(util);
-
-	return util + margin;
+	return max_t(long, capacity_of(cpu) - cpu_util_wake(cpu, p), 0);
 }
 
 /*
