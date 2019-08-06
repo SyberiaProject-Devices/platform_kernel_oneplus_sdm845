@@ -751,106 +751,9 @@ static unsigned long task_h_load(struct task_struct *p);
  * Note: The tables runnable_avg_yN_inv and runnable_avg_yN_sum are
  * dependent on this value.
  */
-
-#if defined(CONFIG_SCHED_PELT_HALF_LIFE_8)
-
-#define LOAD_AVG_PERIOD 8
-#define LOAD_AVG_MAX 12326 /* maximum possible load avg */
-#define LOAD_AVG_MAX_N 85 /* number of full periods to produce LOAD_AVG_MAX */
-
-/* Precomputed fixed inverse multiplies for multiplication by y^n */
-static const u32 runnable_avg_yN_inv[] = {
-	0xffffffff, 0xeac0c6e6, 0xd744fcc9, 0xc5672a10, 0xb504f333, 0xa5fed6a9,
-	0x9837f050, 0x8b95c1e3,
-};
-
-/*
- * Precomputed \Sum y^k { 1<=k<=n }.  These are floor(true_value) to prevent
- * over-estimates when re-combining.
- */
-static const u32 runnable_avg_yN_sum[] = {
-	    0,  939, 1800, 2589, 3313, 3977, 4585, 5143, 5655,
-};
-
-/*
- * Precomputed \Sum y^k { 1<=k<=n, where n%8=0). Values are rolled down to
- * lower integers. See Documentation/scheduler/sched-avg.txt how these
- * were generated:
- */
-static const u32 __accumulated_sum_N[] = {
-	     0,  5655,  8482,  9896, 10603, 10956,
-	 11133, 11221, 11265, 11287, 11298, 11304,
-};
-
-#elif defined(CONFIG_SCHED_PELT_HALF_LIFE_16)
-
-#define LOAD_AVG_PERIOD 16
-#define LOAD_AVG_MAX 24130 /* maximum possible load avg */
-#define LOAD_AVG_MAX_N 172 /* number of full periods to produce LOAD_AVG_MAX */
-
-/* Precomputed fixed inverse multiplies for multiplication by y^n */
-static const u32 runnable_avg_yN_inv[] = {
-	0xffffffff, 0xf5257d14, 0xeac0c6e6, 0xe0ccdeeb, 0xd744fcc9, 0xce248c14,
-	0xc5672a10, 0xbd08a39e, 0xb504f333, 0xad583ee9, 0xa5fed6a9, 0x9ef5325f,
-	0x9837f050, 0x91c3d373, 0x8b95c1e3, 0x85aac367,
-};
-
-/*
- * Precomputed \Sum y^k { 1<=k<=n }.  These are floor(true_value) to prevent
- * over-estimates when re-combining.
- */
-static const u32 runnable_avg_yN_sum[] = {
-	    0,  980, 1919, 2818, 3679, 4503, 5292, 6048, 6772, 7465, 8129,
-	 8764, 9373, 9956,10514,11048,11560,
-};
-
-/*
- * Precomputed \Sum y^k { 1<=k<=n, where n%16=0). Values are rolled down to
- * lower integers. See Documentation/scheduler/sched-avg.txt how these
- * were generated:
- */
-static const u32 __accumulated_sum_N[] = {
-	     0, 11560, 17340, 20230, 21675, 22397,
-	 22758, 22939, 23029, 23074, 23097, 23108,
-};
-
-#elif defined(CONFIG_SCHED_PELT_HALF_LIFE_32)
-
 #define LOAD_AVG_PERIOD 32
 #define LOAD_AVG_MAX 47742 /* maximum possible load avg */
 #define LOAD_AVG_MAX_N 345 /* number of full periods to produce LOAD_AVG_MAX */
-
-/* Precomputed fixed inverse multiplies for multiplication by y^n */
-static const u32 runnable_avg_yN_inv[] = {
-	0xffffffff, 0xfa83b2da, 0xf5257d14, 0xefe4b99a, 0xeac0c6e6, 0xe5b906e6,
-	0xe0ccdeeb, 0xdbfbb796, 0xd744fcc9, 0xd2a81d91, 0xce248c14, 0xc9b9bd85,
-	0xc5672a10, 0xc12c4cc9, 0xbd08a39e, 0xb8fbaf46, 0xb504f333, 0xb123f581,
-	0xad583ee9, 0xa9a15ab4, 0xa5fed6a9, 0xa2704302, 0x9ef5325f, 0x9b8d39b9,
-	0x9837f050, 0x94f4efa8, 0x91c3d373, 0x8ea4398a, 0x8b95c1e3, 0x88980e80,
-	0x85aac367, 0x82cd8698,
-};
-
-/*
- * Precomputed \Sum y^k { 1<=k<=n }.  These are floor(true_value) to prevent
- * over-estimates when re-combining.
- */
-static const u32 runnable_avg_yN_sum[] = {
-	    0, 1002, 1982, 2941, 3880, 4798, 5697, 6576, 7437, 8279, 9103,
-	 9909,10698,11470,12226,12966,13690,14398,15091,15769,16433,17082,
-	17718,18340,18949,19545,20128,20698,21256,21802,22336,22859,23371,
-};
-
-/*
- * Precomputed \Sum y^k { 1<=k<=n, where n%32=0). Values are rolled down to
- * lower integers. See Documentation/scheduler/sched-avg.txt how these
- * were generated:
- */
-static const u32 __accumulated_sum_N[] = {
-	    0, 23371, 35056, 40899, 43820, 45281,
-	46011, 46376, 46559, 46650, 46696, 46719,
-};
-
-#endif /* CONFIG_SCHED_PELT_HALF_LIFE_N */
 
 /* Give new sched_entity start runnable values to heavy its load in infant time */
 void init_entity_runnable_average(struct sched_entity *se)
@@ -2884,6 +2787,36 @@ int sched_set_wake_up_idle(struct task_struct *p, int wake_up_idle)
 }
 EXPORT_SYMBOL(sched_set_wake_up_idle);
 
+/* Precomputed fixed inverse multiplies for multiplication by y^n */
+static const u32 runnable_avg_yN_inv[] = {
+	0xffffffff, 0xfa83b2da, 0xf5257d14, 0xefe4b99a, 0xeac0c6e6, 0xe5b906e6,
+	0xe0ccdeeb, 0xdbfbb796, 0xd744fcc9, 0xd2a81d91, 0xce248c14, 0xc9b9bd85,
+	0xc5672a10, 0xc12c4cc9, 0xbd08a39e, 0xb8fbaf46, 0xb504f333, 0xb123f581,
+	0xad583ee9, 0xa9a15ab4, 0xa5fed6a9, 0xa2704302, 0x9ef5325f, 0x9b8d39b9,
+	0x9837f050, 0x94f4efa8, 0x91c3d373, 0x8ea4398a, 0x8b95c1e3, 0x88980e80,
+	0x85aac367, 0x82cd8698,
+};
+
+/*
+ * Precomputed \Sum y^k { 1<=k<=n }.  These are floor(true_value) to prevent
+ * over-estimates when re-combining.
+ */
+static const u32 runnable_avg_yN_sum[] = {
+	    0, 1002, 1982, 2941, 3880, 4798, 5697, 6576, 7437, 8279, 9103,
+	 9909,10698,11470,12226,12966,13690,14398,15091,15769,16433,17082,
+	17718,18340,18949,19545,20128,20698,21256,21802,22336,22859,23371,
+};
+
+/*
+ * Precomputed \Sum y^k { 1<=k<=n, where n%32=0). Values are rolled down to
+ * lower integers. See Documentation/scheduler/sched-avg.txt how these
+ * were generated:
+ */
+static const u32 __accumulated_sum_N32[] = {
+	    0, 23371, 35056, 40899, 43820, 45281,
+	46011, 46376, 46559, 46650, 46696, 46719,
+};
+
 /*
  * Approximate:
  *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
@@ -2933,7 +2866,7 @@ static u32 __compute_runnable_contrib(u64 n)
 		return LOAD_AVG_MAX;
 
 	/* Since n < LOAD_AVG_MAX_N, n/LOAD_AVG_PERIOD < 11 */
-	contrib = __accumulated_sum_N[n/LOAD_AVG_PERIOD];
+	contrib = __accumulated_sum_N32[n/LOAD_AVG_PERIOD];
 	n %= LOAD_AVG_PERIOD;
 	contrib = decay_load(contrib, n);
 	return contrib + runnable_avg_yN_sum[n];

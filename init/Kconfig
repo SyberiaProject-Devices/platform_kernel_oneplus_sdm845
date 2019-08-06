@@ -405,39 +405,6 @@ config IRQ_TIME_ACCOUNTING
 
 	  If in doubt, say N here.
 
-choice
-	prompt "CFS PELT half-life period"
-	default SCHED_PELT_HALF_LIFE_32
-	help
-	  This configures the half-life period of the CFS scheduler in
-	  milliseconds. This decides how quickly the load decays for the tasks
-	  queued on CFS.
-
-	  If in doubt, select 'SCHED_PELT_HALF_LIFE_32'
-
-config SCHED_PELT_HALF_LIFE_8
-        bool "CFS PELT half-life period 8 milliseconds"
-        help
-	  This means that the contribution to load ~8ms ago will be weighted
-	  approximately half as much as the contribution to load within the last
-	  ms.
-
-config SCHED_PELT_HALF_LIFE_16
-        bool "CFS PELT half-life period 16 milliseconds"
-        help
-	  This means that the contribution to load ~16ms ago will be weighted
-	  approximately half as much as the contribution to load within the last
-	  ms.
-
-config SCHED_PELT_HALF_LIFE_32
-        bool "CFS PELT half-life period 32 milliseconds"
-        help
-	  This means that the contribution to load ~32ms ago will be weighted
-	  approximately half as much as the contribution to load within the last
-	  ms.
-
-endchoice
-
 config SCHED_WALT
         bool "Support window based load tracking"
         depends on SMP
