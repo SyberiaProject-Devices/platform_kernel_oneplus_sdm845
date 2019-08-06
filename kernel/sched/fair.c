@@ -9659,7 +9659,9 @@ static int check_asym_packing(struct lb_env *env, struct sd_lb_stats *sds)
 	if (env->dst_cpu > busiest_cpu)
 		return 0;
 
-	env->imbalance = sds->busiest_stat.group_load;
+	env->imbalance = DIV_ROUND_CLOSEST(
+		sds->busiest_stat.avg_load * sds->busiest_stat.group_capacity,
+		SCHED_CAPACITY_SCALE);
 
 	return 1;
 }
