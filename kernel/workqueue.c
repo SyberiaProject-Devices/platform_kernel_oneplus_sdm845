@@ -427,9 +427,7 @@ static void show_pwq(struct pool_workqueue *pwq);
  */
 #define for_each_pwq(pwq, wq)						\
 	list_for_each_entry_rcu((pwq), &(wq)->pwqs, pwqs_node,		\
-				lockdep_is_held(&wq->mutex))		\
-		if (({ assert_rcu_or_wq_mutex(wq); false; })) { }	\
-		else
+				 lockdep_is_held(&(wq->mutex)))
 
 #ifdef CONFIG_DEBUG_OBJECTS_WORK
 
