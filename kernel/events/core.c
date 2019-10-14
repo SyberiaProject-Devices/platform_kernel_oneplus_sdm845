@@ -4721,6 +4721,10 @@ perf_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 	struct perf_event_context *ctx;
 	int ret;
 
+	ret = security_perf_event_read(event);
+	if (ret)
+		return ret;
+
 #if defined CONFIG_HOTPLUG_CPU || defined CONFIG_KEXEC_CORE
 	spin_lock(&dormant_event_list_lock);
 	if (event->state == PERF_EVENT_STATE_DORMANT) {
