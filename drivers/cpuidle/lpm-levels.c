@@ -56,6 +56,7 @@
 #define SCLK_HZ (32768)
 #define PSCI_POWER_STATE(reset) (reset << 30)
 #define PSCI_AFFINITY_LEVEL(lvl) ((lvl & 0x3) << 24)
+#define MAX_LPM_CPUS (8)
 
 enum {
 	MSM_LPM_LVL_DBG_SUSPEND_LIMITS = BIT(0),
@@ -138,10 +139,30 @@ module_param_named(print_parsed_dt, print_parsed_dt, bool, 0664);
 static bool sleep_disabled;
 module_param_named(sleep_disabled, sleep_disabled, bool, 0664);
 
+static int lpm_cpu_qos_notify(struct notifier_block *nb,
+		unsigned long val, void *ptr);
+
+static struct notifier_block dev_pm_qos_nb[MAX_LPM_CPUS] = {
+	[0 ... (MAX_LPM_CPUS - 1)] = { .notifier_call = lpm_cpu_qos_notify },
+};
+
 void msm_cpuidle_set_sleep_disable(bool disable)
 {
        sleep_disabled = disable;
        pr_info("%s:sleep_disabled=%d\n",__func__,disable);
+}
+
+static int lpm_cpu_qos_notify(struct notifier_block *nb,
+		unsigned long val, void *ptr)
+{
+	int cpu = nb - dev_pm_qos_nb;
+
+	preempt_disable();
+	if (cpu != smp_processor_id() && cpu_online(cpu))
+		wake_up_if_idle(cpu);
+	preempt_enable();
+
+	return NOTIFY_OK;
 }
 
 /**
@@ -329,6 +350,10 @@ static void update_debug_pc_event(enum debug_event event, uint32_t arg1,
 static int lpm_dying_cpu(unsigned int cpu)
 {
 	struct lpm_cluster *cluster = per_cpu(cpu_lpm, cpu)->parent;
+	struct device *dev = get_cpu_device(cpu);
+ 
+	dev_pm_qos_remove_notifier(dev, &dev_pm_qos_nb[cpu],
+				   DEV_PM_QOS_RESUME_LATENCY);
 
 	update_debug_pc_event(CPU_HP_DYING, cpu,
 				cluster->num_children_in_sync.bits[0],
@@ -340,6 +365,10 @@ static int lpm_dying_cpu(unsigned int cpu)
 static int lpm_starting_cpu(unsigned int cpu)
 {
 	struct lpm_cluster *cluster = per_cpu(cpu_lpm, cpu)->parent;
+	struct device *dev = get_cpu_device(cpu);
+
+	dev_pm_qos_add_notifier(dev, &dev_pm_qos_nb[cpu],
+				DEV_PM_QOS_RESUME_LATENCY);
 
 	update_debug_pc_event(CPU_HP_STARTING, cpu,
 				cluster->num_children_in_sync.bits[0],
@@ -635,12 +664,25 @@ static void clear_predict_history(void)
 
 static void update_history(struct cpuidle_device *dev, int idx);
 
+static inline uint32_t get_cpus_qos(const struct cpumask *mask)
+{
+	int cpu;
+	uint32_t n, latency;
+
+	for_each_cpu(cpu, mask) {
+		n = cpuidle_governor_latency_req(cpu);
+		if (n < latency)
+			latency = n;
+	}
+
+	return latency;
+}
+
 static int cpu_power_select(struct cpuidle_device *dev,
 		struct lpm_cpu *cpu)
 {
 	int best_level = 0;
-	uint32_t latency_us = pm_qos_request_for_cpu(PM_QOS_CPU_DMA_LATENCY,
-							dev->cpu);
+	uint32_t latency_us = get_cpus_qos(cpumask_of(dev->cpu));
 	s64 sleep_us = ktime_to_us(tick_nohz_get_sleep_length());
 	uint32_t modified_time_us = 0;
 	uint32_t next_event_us = 0;
@@ -997,8 +1039,7 @@ static int cluster_select(struct lpm_cluster *cluster, bool from_idle,
 	}
 
 	if (cpumask_and(&mask, cpu_online_mask, &cluster->child_cpus))
-		latency_us = pm_qos_request_for_cpumask(PM_QOS_CPU_DMA_LATENCY,
-							&mask);
+		latency_us = get_cpus_qos(&mask);
 
 	for (i = 0; i < cluster->nlevels; i++) {
 		struct lpm_cluster_level *level = &cluster->levels[i];
