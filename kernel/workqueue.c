@@ -426,7 +426,9 @@ static void workqueue_sysfs_unregister(struct workqueue_struct *wq);
  */
 #define for_each_pwq(pwq, wq)						\
 	list_for_each_entry_rcu((pwq), &(wq)->pwqs, pwqs_node,		\
-				 lockdep_is_held(&(wq->mutex)))
+				lockdep_is_held(&wq->mutex))		\
+		if (({ assert_rcu_or_wq_mutex(wq); false; })) { }	\
+		else
 
 #ifdef CONFIG_DEBUG_OBJECTS_WORK
 
