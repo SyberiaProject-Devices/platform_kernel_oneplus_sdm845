@@ -1501,6 +1501,7 @@ quick_select_fast:
 		handle_lmk_event(selected, selected_tasksize, min_score_adj);
 		put_task_struct(selected);
 	}
+
 	return rem;
 }
 
