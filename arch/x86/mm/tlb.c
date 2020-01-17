@@ -403,7 +403,23 @@ void native_flush_tlb_others(const struct cpumask *cpumask,
 								&info, 1);
 		return;
 	}
-	smp_call_function_many(cpumask, flush_tlb_func, &info, 1);
+
+	/*
+	 * If no page tables were freed, we can skip sending IPIs to
+	 * CPUs in lazy TLB mode. They will flush the CPU themselves
+	 * at the next context switch.
+	 *
+	 * However, if page tables are getting freed, we need to send the
+	 * IPI everywhere, to prevent CPUs in lazy TLB mode from tripping
+	 * up on the new contents of what used to be page tables, while
+	 * doing a speculative memory access.
+	 */
+	if (info->freed_tables)
+		smp_call_function_many(cpumask, flush_tlb_func_remote,
+			       (void *)info, 1);
+	else
+		on_each_cpu_cond_mask(tlb_is_not_lazy, flush_tlb_func_remote,
+				(void *)info, 1, cpumask);
 }
 
 /*

@@ -1490,13 +1490,13 @@ static bool bh_exists_in_lru(int cpu, void *arg)
 }
 void invalidate_bh_lrus(void)
 {
-	on_each_cpu_cond(has_bh_in_lru, invalidate_bh_lru, NULL, 1, GFP_KERNEL);
+	on_each_cpu_cond(has_bh_in_lru, invalidate_bh_lru, NULL, 1);
 }
 EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
 
 static void evict_bh_lrus(struct buffer_head *bh)
 {
-	on_each_cpu_cond(bh_exists_in_lru, __evict_bh_lru, bh, 1, GFP_ATOMIC);
+	on_each_cpu_cond(bh_exists_in_lru, __evict_bh_lru, bh, 1);
 }
 
 void set_bh_page(struct buffer_head *bh,
