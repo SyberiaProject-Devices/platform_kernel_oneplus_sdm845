@@ -4087,6 +4087,7 @@ void scheduler_tick(void)
 	struct task_struct *curr = rq->curr;
 	unsigned long thermal_pressure;
 	struct rq_flags rf;
+	unsigned long thermal_pressure;
 
 	sched_clock_tick();
 
