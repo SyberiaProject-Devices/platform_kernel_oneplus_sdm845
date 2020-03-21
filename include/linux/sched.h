@@ -1424,6 +1424,22 @@ static inline bool cpus_share_cache(int this_cpu, int that_cpu)
 
 struct io_context;			/* See blkdev.h */
 
+#ifdef CONFIG_TRACE_IRQFLAGS
+	unsigned int			irq_events;
+	unsigned int			hardirq_threaded;
+	unsigned long			hardirq_enable_ip;
+	unsigned long			hardirq_disable_ip;
+	unsigned int			hardirq_enable_event;
+	unsigned int			hardirq_disable_event;
+	int				hardirqs_enabled;
+	int				hardirq_context;
+	unsigned long			softirq_disable_ip;
+	unsigned long			softirq_enable_ip;
+	unsigned int			softirq_disable_event;
+	unsigned int			softirq_enable_event;
+	int				softirqs_enabled;
+	int				softirq_context;
+#endif
 
 #ifdef ARCH_HAS_PREFETCH_SWITCH_STACK
 extern void prefetch_stack(struct task_struct *t);
