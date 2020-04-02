@@ -667,7 +667,8 @@ static void update_history(struct cpuidle_device *dev, int idx);
 static inline uint32_t get_cpus_qos(const struct cpumask *mask)
 {
 	int cpu;
-	uint32_t n, latency;
+	uint32_t n;
+	uint32_t latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
 
 	for_each_cpu(cpu, mask) {
 		n = cpuidle_governor_latency_req(cpu);
