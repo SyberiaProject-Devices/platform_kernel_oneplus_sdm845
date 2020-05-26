@@ -1448,4 +1448,12 @@ config TOUCHSCREEN_SYNAPTICS_S3320_I2C_RMI
 	help
 	  This enables support for Synaptics s1302 RMI over I2C based touch key.
 
+config TOUCHSCREEN_RAYDIUM_CHIPSET
+	bool "Raydium WT030 touchpanel CHIPSET"
+	depends on I2C
+	help
+	  Say Y here if you have a Raydium WT030 CHIPSET touchscreen.
+
+	  If unsure, say N.
+
 endif

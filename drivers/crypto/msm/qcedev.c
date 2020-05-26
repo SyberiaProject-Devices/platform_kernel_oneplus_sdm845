@@ -1924,12 +1924,6 @@ static inline long qcedev_ioctl(struct file *file,
 		struct qcedev_map_buf_req map_buf = { {0} };
 		int i = 0;
 
-		if (copy_from_user(&map_buf,
-				(void __user *)arg, sizeof(map_buf))) {
-			err = -EFAULT;
-			goto exit_free_qcedev_areq;
-		}
-
 		for (i = 0; i < map_buf.num_fds; i++) {
 			err = qcedev_check_and_map_buffer(handle,
 					map_buf.fd[i],
