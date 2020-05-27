@@ -761,11 +761,17 @@ static unsigned int osm_cpufreq_get(unsigned int cpu)
 static int osm_cpufreq_cpu_init(struct cpufreq_policy *policy)
 {
 	struct cpufreq_frequency_table *table;
-	struct em_data_callback em_cb = EM_DATA_CB(of_dev_pm_opp_get_cpu_power);
+	struct device *cpu_dev;
 	struct clk_osm *c, *parent;
 	struct clk_hw *p_hw;
 	unsigned int i, prev_cc = 0;
 	unsigned int xo_kHz;
+
+	cpu_dev = get_cpu_device(policy->cpu);
+	if (!cpu_dev) {
+		pr_err("failed to get cpu%d device\n", policy->cpu);
+	    return -ENODEV;
+	}
 
 	c = osm_configure_policy(policy);
 	if (!c) {
@@ -835,7 +841,7 @@ static int osm_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	policy->fast_switch_possible = true;
 	policy->driver_data = c;
 
-	em_register_perf_domain(policy->cpus, 0, &em_cb);
+	dev_pm_opp_of_register_em(cpu_dev, policy->cpus);
 	return 0;
 }
 

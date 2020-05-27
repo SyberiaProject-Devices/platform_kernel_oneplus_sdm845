@@ -76,6 +76,8 @@ static int scpi_init_opp_table(const struct cpumask *cpumask)
 	if (ret)
 		dev_err(cpu_dev, "%s: failed to mark OPPs as shared: %d\n",
 			__func__, ret);
+	dev_pm_opp_of_register_em(cpu_dev, policy->cpus);
+
 	return ret;
 }
 

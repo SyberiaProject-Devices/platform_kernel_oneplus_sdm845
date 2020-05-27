@@ -135,6 +135,7 @@ static int omap_cpu_init(struct cpufreq_policy *policy)
 	result = cpufreq_generic_init(policy, freq_table, 300 * 1000);
 	if (!result)
 		return 0;
+	dev_pm_opp_of_register_em(mpu_dev, policy->cpus);
 
 	freq_table_free();
 fail:
