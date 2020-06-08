@@ -2440,7 +2440,7 @@ static inline int tg_has_rt_tasks(struct task_group *tg)
 	if (task_group_is_autogroup(tg))
 		return 0;
 
-	css_task_iter_start(&tg->css, 0, &it);
+	css_task_iter_start(&tg->css, &it);
 	while (!ret && (task = css_task_iter_next(&it)))
 		ret |= rt_task(task);
 	css_task_iter_end(&it);
