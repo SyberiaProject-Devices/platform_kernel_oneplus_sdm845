@@ -2664,10 +2664,11 @@ void __dl_clear_params(struct task_struct *p)
 	dl_se->dl_bw = 0;
 	dl_se->dl_density = 0;
 
-	dl_se->dl_throttled = 0;
-	dl_se->dl_yielded = 0;
-	dl_se->dl_non_contending = 0;
-	dl_se->dl_overrun = 0;
+	dl_se->dl_boosted		= 0;
+	dl_se->dl_throttled		= 0;
+	dl_se->dl_yielded		= 0;
+	dl_se->dl_non_contending	= 0;
+	dl_se->dl_overrun		= 0;
 }
 
 bool dl_param_changed(struct task_struct *p, const struct sched_attr *attr)
