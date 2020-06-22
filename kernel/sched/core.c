@@ -1852,7 +1852,7 @@ void sched_ttwu_pending(void *arg)
 	raw_spin_lock_irqsave(&rq->lock, flags);
 	rq_pin_lock(rq, &rf);
 
-	llist_for_each_entry_safe(p, t, llist, wake_entry) {
+	llist_for_each_entry_safe(p, t, llist, wake_entry.llist) {
 		if (WARN_ON_ONCE(p->on_cpu))
 			smp_cond_load_acquire(&p->on_cpu, !VAL);
 
@@ -1889,7 +1889,7 @@ static void __ttwu_queue_wakelist(struct task_struct *p, int cpu, int wake_flags
 	p->sched_remote_wakeup = !!(wake_flags & WF_MIGRATED);
 
 	WRITE_ONCE(rq->ttwu_pending, 1);
-	__smp_call_single_queue(cpu, &p->wake_entry);
+	__smp_call_single_queue(cpu, &p->wake_entry.llist);
 }
 
 void wake_up_if_idle(int cpu)
@@ -2306,7 +2306,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 
 	init_numa_balancing(clone_flags, p);
 #ifdef CONFIG_SMP
-	p->wake_entry_type = CSD_TYPE_TTWU;
+	p->wake_entry.u_flags = CSD_TYPE_TTWU;
 #endif
 }
 
