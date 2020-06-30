@@ -2171,7 +2171,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
 		goto unlock;
 
 	if (p->in_iowait) {
-		delayacct_blkio_end(p);
+		delayacct_blkio_end();
 		atomic_dec(&task_rq(p)->nr_iowait);
 	}
 
