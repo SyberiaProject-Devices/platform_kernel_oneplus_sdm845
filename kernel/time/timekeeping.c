@@ -2219,7 +2219,7 @@ EXPORT_SYMBOL(get_monotonic_coarse64);
 void do_timer(unsigned long ticks)
 {
 	jiffies_64 += ticks;
-	calc_global_load(ticks);
+	calc_global_load();
 }
 
 /**
