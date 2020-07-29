@@ -410,7 +410,9 @@ config HAVE_SCHED_AVG_IRQ
 	depends on SMP
 
 config SCHED_THERMAL_PRESSURE
-	bool "Enable periodic averaging of thermal pressure"
+	bool
+	default y if ARM && ARM_CPU_TOPOLOGY
+	default y if ARM64
 	depends on SMP
 
 config BSD_PROCESS_ACCT
