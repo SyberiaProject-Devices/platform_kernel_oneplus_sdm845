@@ -26,6 +26,7 @@
  * Change this to 1 if you want to see the failure printouts:
  */
 static unsigned int debug_locks_verbose;
+unsigned int force_read_lock_recursive;
 
 static DEFINE_WD_CLASS(ww_lockdep);
 
@@ -1805,6 +1806,11 @@ void locking_selftest(void)
 	}
 
 	/*
+	 * treats read_lock() as recursive read locks for testing purpose
+	 */
+	force_read_lock_recursive = 1;
+
+	/*
 	 * Run the testsuite:
 	 */
 	printk("------------------------\n");
@@ -1873,6 +1879,11 @@ void locking_selftest(void)
 //	DO_TESTCASE_6x2B("irq read-recursion #2", irq_read_recursion2);
 
 	ww_tests();
+
+	force_read_lock_recursive = 0;
+	/*
+	 * queued_read_lock() specific test cases can be put here
+	 */
 
 	if (unexpected_testcase_failures) {
 		printk("-----------------------------------------------------------------\n");
