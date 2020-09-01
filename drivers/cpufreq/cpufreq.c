@@ -461,7 +461,7 @@ void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
 
 	cpufreq_notify_post_transition(policy, freqs, transition_failed);
 
-	scale_freq_capacity(policy->related_cpus,
+	arch_set_freq_scale(policy->related_cpus,
 			    policy->cur,
 			    policy->cpuinfo.max_freq);
 
@@ -2106,8 +2106,10 @@ unsigned int cpufreq_driver_fast_switch(struct cpufreq_policy *policy,
 		return 0;
 
 	policy->cur = freq;
-	scale_freq_capacity(policy->related_cpus, freq,
+
+	arch_set_freq_scale(policy->related_cpus, freq,
 			    policy->cpuinfo.max_freq);
+
 	cpufreq_stats_record_transition(policy, freq);
 
 	if (trace_cpu_frequency_enabled()) {
