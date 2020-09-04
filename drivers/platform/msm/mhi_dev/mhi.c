@@ -2295,7 +2295,6 @@ int mhi_dev_open_channel(uint32_t chan_id,
 free_client:
 	kfree(*handle_client);
 	*handle_client = NULL;
-
 exit:
 	mutex_unlock(&ch->ch_lock);
 	return rc;
@@ -2869,6 +2868,11 @@ static void mhi_dev_enable(struct work_struct *work)
 		pr_err("%s: get mhi state failed\n", __func__);
 		return;
 	}
+	if (mhi_reset) {
+		mhi_dev_mmio_clear_reset(mhi);
+		mhi_log(MHI_MSG_VERBOSE,
+			"Cleared reset before waiting for M0\n");
+	}
 
 	while (state != MHI_DEV_M0_STATE && max_cnt < MHI_SUSPEND_TIMEOUT) {
 		/* Wait for Host to set the M0 state */
@@ -2877,6 +2881,11 @@ static void mhi_dev_enable(struct work_struct *work)
 		if (rc) {
 			pr_err("%s: get mhi state failed\n", __func__);
 			return;
+		}
+		if (mhi_reset) {
+			mhi_dev_mmio_clear_reset(mhi);
+			mhi_log(MHI_MSG_VERBOSE,
+				"Cleared reset while waiting for M0\n");
 		}
 		max_cnt++;
 	}
