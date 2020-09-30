@@ -46,8 +46,12 @@ enum lockdep_wait_type {
 /*
  * We'd rather not expose kernel/lockdep_states.h this wide, but we do need
  * the total number of states... :-(
+ *
+ * XXX_LOCK_USAGE_STATES is the number of lines in lockdep_states.h, for each
+ * of those we generates 4 states, Additionally we report on USED and USED_READ.
  */
-#define XXX_LOCK_USAGE_STATES		(1+3*4)
+#define XXX_LOCK_USAGE_STATES		2
+#define LOCK_TRACE_STATES		(XXX_LOCK_USAGE_STATES*4 + 2)
 
 /*
  * NR_LOCKDEP_CACHING_CLASSES ... Number of classes
@@ -111,7 +115,7 @@ struct lock_class {
 	 * IRQ/softirq usage tracking bits:
 	 */
 	unsigned long			usage_mask;
-	const struct lock_trace		*usage_traces[XXX_LOCK_USAGE_STATES];
+	const struct lock_trace		*usage_traces[LOCK_TRACE_STATES];
 
 	/*
 	 * These fields represent a directed graph of lock dependencies,
