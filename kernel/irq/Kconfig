@@ -101,6 +101,9 @@ config IRQ_DOMAIN_DEBUG
 
 	  If you don't know what this means you don't need it.
 
+config ARCH_WANTS_IRQ_RAW
+	bool
+
 # Support forced irq threading
 config IRQ_FORCED_THREADING
        bool
