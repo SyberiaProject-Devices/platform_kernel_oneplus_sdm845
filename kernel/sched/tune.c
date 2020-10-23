@@ -135,7 +135,7 @@ root_schedtune = {
  *    implementation especially for the computation of the per-CPU boost
  *    value
  */
-#define BOOSTGROUPS_COUNT 6
+#define BOOSTGROUPS_COUNT 7
 
 /* Array of configured boostgroups */
 static struct schedtune *allocated_group[BOOSTGROUPS_COUNT] = {
@@ -608,7 +608,7 @@ struct st_data {
 static void write_default_values(struct cgroup_subsys_state *css)
 {
 	static struct st_data st_targets[] = {
-	    { "top-app",	1, 1, },
+	    { "top-app",	5, 1, },
 	    { "foreground",	0, 1, },
 	    { "background",	0, 0, },
 	};
