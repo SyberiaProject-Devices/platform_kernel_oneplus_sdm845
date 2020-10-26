@@ -8,6 +8,7 @@
 #include <linux/pm_qos.h>
 #include <linux/tracepoint.h>
 #include <linux/trace_events.h>
+#include <linux/cpufreq.h>
 
 #define TPS(x)  tracepoint_string(x)
 
@@ -149,21 +150,20 @@ DEFINE_EVENT(cpu, cpu_frequency,
 
 TRACE_EVENT(cpu_frequency_limits,
 
-	TP_PROTO(unsigned int max_freq, unsigned int min_freq,
-		unsigned int cpu_id),
+	TP_PROTO(struct cpufreq_policy *policy),
 
-	TP_ARGS(max_freq, min_freq, cpu_id),
+	TP_ARGS(policy),
 
 	TP_STRUCT__entry(
-		__field(	u32,		min_freq	)
-		__field(	u32,		max_freq	)
-		__field(	u32,		cpu_id		)
+		__field(u32, min_freq)
+		__field(u32, max_freq)
+		__field(u32, cpu_id)
 	),
 
 	TP_fast_assign(
-		__entry->min_freq = min_freq;
-		__entry->max_freq = max_freq;
-		__entry->cpu_id = cpu_id;
+		__entry->min_freq = policy->min;
+		__entry->max_freq = policy->max;
+		__entry->cpu_id = policy->cpu;
 	),
 
 	TP_printk("min=%lu max=%lu cpu_id=%lu",

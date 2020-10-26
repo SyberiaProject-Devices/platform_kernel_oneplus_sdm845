@@ -121,7 +121,7 @@ static LIST_HEAD(cpufreq_cdev_list);
 static int cpufreq_thermal_notifier(struct notifier_block *nb,
 				    unsigned long event, void *data)
 {
-	struct cpufreq_policy *policy = data;
+	struct cpufreq_policy_data *policy = data;
 	unsigned long clipped_freq = ULONG_MAX, floor_freq = 0;
 	struct cpufreq_cooling_device *cpufreq_cdev;
 
