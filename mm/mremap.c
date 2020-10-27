@@ -302,8 +302,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
 static unsigned long move_vma(struct vm_area_struct *vma,
 		unsigned long old_addr, unsigned long old_len,
 		unsigned long new_len, unsigned long new_addr,
-		bool *locked, unsigned long flags,
-		struct vm_userfaultfd_ctx *uf)
+		bool *locked, unsigned long flags)
 {
 	struct mm_struct *mm = vma->vm_mm;
 	struct vm_area_struct *new_vma;
@@ -499,7 +498,7 @@ static struct vm_area_struct *vma_to_resize(unsigned long addr,
 
 static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
 		unsigned long new_addr, unsigned long new_len, bool *locked,
-		unsigned long flags, struct vm_userfaultfd_ctx *uf)
+		unsigned long flags)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
@@ -577,7 +576,6 @@ static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
 		new_addr = ret;
 
 	ret = move_vma(vma, addr, old_len, new_len, new_addr, locked, flags);
-		       uf_unmap);
 
 	if (!(offset_in_page(ret)))
 		goto out;
@@ -732,6 +730,7 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
 
 		ret = move_vma(vma, addr, old_len, new_len, new_addr, &locked, flags);
 	}
+
 out:
 	if (offset_in_page(ret)) {
 		vm_unacct_memory(charged);
