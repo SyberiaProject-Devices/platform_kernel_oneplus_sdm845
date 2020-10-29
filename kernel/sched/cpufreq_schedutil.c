@@ -133,9 +133,8 @@ static bool sugov_up_down_rate_limit(struct sugov_policy *sg_policy, u64 time,
 static bool sugov_update_next_freq(struct sugov_policy *sg_policy, u64 time,
 				   unsigned int next_freq)
 {
-	if (sg_policy->need_freq_update)
-		sg_policy->need_freq_update = cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS);
-	else if (sg_policy->next_freq == next_freq)
+	if (sg_policy->next_freq == next_freq &&
+	    !cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS))
 		return false;
 
 	sg_policy->next_freq = next_freq;
