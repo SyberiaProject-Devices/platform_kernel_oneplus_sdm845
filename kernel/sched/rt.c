@@ -1481,7 +1481,7 @@ task_may_not_preempt(struct task_struct *task, int cpu)
 #endif /* CONFIG_RT_SOFTINT_OPTIMIZATION */
 
 static int
-select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+select_task_rq_rt(struct task_struct *p, int cpu, int flags)
 {
 	struct task_struct *curr, *tgt_task;
 	struct rq *rq;
@@ -1499,7 +1499,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 		return target_cpu;
 
 	/* For anything but wake ups, just return the task_cpu */
-	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+	if (!(flags & (WF_TTWU | WF_FORK)))
 		goto out;
 
 	rq = cpu_rq(cpu);
