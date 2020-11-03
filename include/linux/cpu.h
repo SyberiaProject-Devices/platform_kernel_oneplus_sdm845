@@ -210,12 +210,16 @@ extern void cpu_hotplug_enable(void);
 #define __unregister_hotcpu_notifier(nb)	__unregister_cpu_notifier(nb)
 void clear_tasks_mm_cpumask(int cpu);
 int cpu_down(unsigned int cpu);
+int pause_cpus(struct cpumask *cpumask);
+int resume_cpus(struct cpumask *cpumask);
 
 #else		/* CONFIG_HOTPLUG_CPU */
 
 static inline void cpu_hotplug_begin(void) {}
 static inline void cpu_hotplug_done(void) {}
 static inline void lockdep_assert_cpus_held(void) { }
+static inline int pause_cpus(struct cpumask *cpumask) { return -ENODEV; }
+static inline int resume_cpus(struct cpumask *cpumask) { return -ENODEV; }
 #define get_online_cpus()	do { } while (0)
 #define put_online_cpus()	do { } while (0)
 #define cpu_hotplug_disable()	do { } while (0)
