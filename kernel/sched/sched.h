@@ -962,6 +962,11 @@ struct rq {
 #endif
 #endif
 
+#ifdef CONFIG_HOTPLUG_CPU
+	struct cpu_stop_work	drain;
+	struct cpu_stop_done	drain_done;
+#endif
+
 #ifdef CONFIG_CPU_IDLE
 	/* Must be inspected within a rcu lock section */
 	struct cpuidle_state *idle_state;

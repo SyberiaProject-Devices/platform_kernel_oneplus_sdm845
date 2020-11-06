@@ -389,6 +389,8 @@ extern int sched_cpu_activate(unsigned int cpu);
 extern int sched_cpus_activate(struct cpumask *cpus);
 extern int sched_cpu_deactivate(unsigned int cpu);
 extern int sched_cpus_deactivate_nosync(struct cpumask *cpus);
+extern int sched_cpu_drain_rq(unsigned int cpu);
+extern void sched_cpu_drain_rq_wait(unsigned int cpu);
 
 #ifdef CONFIG_HOTPLUG_CPU
 extern int sched_cpu_dying(unsigned int cpu);
@@ -1751,6 +1753,10 @@ struct task_struct {
 	struct task_group *sched_task_group;
 #endif
 	struct sched_dl_entity dl;
+
+#ifdef CONFIG_HOTPLUG_CPU
+	struct list_head		percpu_kthread_node;
+#endif
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	/* list of struct preempt_notifier: */
