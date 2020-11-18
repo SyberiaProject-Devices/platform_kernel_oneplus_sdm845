@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2018,2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -268,7 +268,7 @@ void kgsl_process_init_sysfs(struct kgsl_device *device,
 	/* Keep private valid until the sysfs enries are removed. */
 	kgsl_process_private_get(private);
 
-	snprintf(name, sizeof(name), "%d", private->pid);
+	snprintf(name, sizeof(name), "%d", pid_nr(private->pid));
 
 	if (kobject_init_and_add(&private->kobj, &ktype_mem_entry,
 		kgsl_driver.prockobj, name)) {
@@ -592,7 +592,7 @@ static void kgsl_cma_coherent_free(struct kgsl_memdesc *memdesc)
 				&kgsl_driver.stats.secure);
 
 			kgsl_cma_unlock_secure(memdesc);
-			attrs = memdesc->attrs;
+			attrs = (unsigned long)&memdesc->attrs;
 		} else
 			atomic_long_sub(memdesc->size,
 				&kgsl_driver.stats.coherent);
@@ -812,7 +812,6 @@ kgsl_sharedmem_page_alloc_user(struct kgsl_memdesc *memdesc,
 	unsigned int pcount = 0;
 	size_t len;
 	unsigned int align;
-	bool memwq_flush_done = false;
 
 	static DEFINE_RATELIMIT_STATE(_rs,
 					DEFAULT_RATELIMIT_INTERVAL,
@@ -886,13 +885,6 @@ kgsl_sharedmem_page_alloc_user(struct kgsl_memdesc *memdesc,
 		if (page_count <= 0) {
 			if (page_count == -EAGAIN)
 				continue;
-
-			/* if OoM, retry once after flushing mem_wq */
-			if (page_count == -ENOMEM && !memwq_flush_done) {
-				flush_workqueue(kgsl_driver.mem_workqueue);
-				memwq_flush_done = true;
-				continue;
-			}
 
 			/*
 			 * Update sglen and memdesc size,as requested allocation
