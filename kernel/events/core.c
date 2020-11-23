@@ -8541,8 +8541,10 @@ perf_event_parse_addr_filter(struct perf_event *event, char *fstr,
 				 * different processes.
 				 */
 				ret = -EOPNOTSUPP;
-				if (!event->ctx->task)
-					goto fail_free_name;
+				if (!event->ctx->task) {
+					kfree(filename);
+					goto fail;
+				}
 
 				/* look up the path and grab its inode */
 				ret = kern_path(filename, LOOKUP_FOLLOW,
