@@ -6505,8 +6505,8 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * is already enough to scale the EM reported power
 		 * consumption at the (eventually clamped) cpu_capacity.
 		 */
-		sum_util += schedutil_cpu_util(cpu, util_cfs, cpu_cap,
-				   ENERGY_UTIL, NULL);
+		sum_util += effective_cpu_util(cpu, util_cfs, cpu_cap,
+					       ENERGY_UTIL, NULL);
 
 		/*
 		 * Performance domain frequency: utilization clamping
@@ -6515,8 +6515,8 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * NOTE: in case RT tasks are running, by default the
 		 * FREQUENCY_UTIL's utilization can be max OPP.
 		 */
-		cpu_util = schedutil_cpu_util(cpu, util_cfs, cpu_cap,
-				      FREQUENCY_UTIL, tsk);
+		cpu_util = effective_cpu_util(cpu, util_cfs, cpu_cap,
+					      FREQUENCY_UTIL, tsk);
 		max_util = max(max_util, cpu_util);
 	}
 
@@ -6635,67 +6635,67 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 		spare_cap = cpu_cap;
 		lsub_positive(&spare_cap, util);
 
-		/*
-		 * Skip CPUs that cannot satisfy the capacity request.
-		 * IOW, placing the task there would make the CPU
-		 * overutilized. Take uclamp into account to see how
-		 * much capacity we can get out of the CPU; this is
-		 * aligned with schedutil_cpu_util().
-		 */
-		util = uclamp_rq_util_with(cpu_rq(cpu), util, p);
-		if (!fits_capacity(util, cpu_cap))
-			continue;
-
-		/* Always use prev_cpu as a candidate. */
-		if (!latency_sensitive && cpu == prev_cpu) {
-			prev_delta = compute_energy(p, prev_cpu, pd);
-			prev_delta -= base_energy_pd;
-			best_delta = min(best_delta, prev_delta);
-		}
-
-		/*
-		 * Find the CPU with the maximum spare capacity in
-		 * the performance domain
-		 */
-		if (spare_cap > max_spare_cap) {
-			max_spare_cap = spare_cap;
-			max_spare_cap_cpu = cpu;
-		}
-
-		if (!latency_sensitive)
-			continue;
-
-		if (idle_cpu(cpu)) {
-			cpu_cap = capacity_orig_of(cpu);
-			if (boosted && cpu_cap < target_cap)
+			/*
+			 * Skip CPUs that cannot satisfy the capacity request.
+			 * IOW, placing the task there would make the CPU
+			 * overutilized. Take uclamp into account to see how
+			 * much capacity we can get out of the CPU; this is
+			 * aligned with sched_cpu_util().
+			 */
+			util = uclamp_rq_util_with(cpu_rq(cpu), util, p);
+			if (!fits_capacity(util, cpu_cap))
 				continue;
-			if (!boosted && cpu_cap > target_cap)
+
+			/* Always use prev_cpu as a candidate. */
+			if (!latency_sensitive && cpu == prev_cpu) {
+				prev_delta = compute_energy(p, prev_cpu, pd);
+				prev_delta -= base_energy_pd;
+				best_delta = min(best_delta, prev_delta);
+			}
+
+			/*
+			 * Find the CPU with the maximum spare capacity in
+			 * the performance domain
+			 */
+			if (spare_cap > max_spare_cap) {
+				max_spare_cap = spare_cap;
+				max_spare_cap_cpu = cpu;
+			}
+
+			if (!latency_sensitive)
 				continue;
-			idle = idle_get_state(cpu_rq(cpu));
-			if (idle && idle->exit_latency > min_exit_lat &&
-				cpu_cap == target_cap)
+
+			if (idle_cpu(cpu)) {
+				cpu_cap = capacity_orig_of(cpu);
+				if (boosted && cpu_cap < target_cap)
 					continue;
+				if (!boosted && cpu_cap > target_cap)
+					continue;
+				idle = idle_get_state(cpu_rq(cpu));
+				if (idle && idle->exit_latency > min_exit_lat &&
+					cpu_cap == target_cap)
+						continue;
 
-			if (idle)
-				min_exit_lat = idle->exit_latency;
-			target_cap = cpu_cap;
-			best_idle_cpu = cpu;
-		} else if (spare_cap > max_spare_cap_ls) {
-			max_spare_cap_ls = spare_cap;
-			max_spare_cap_cpu_ls = cpu;
+				if (idle)
+					min_exit_lat = idle->exit_latency;
+				target_cap = cpu_cap;
+				best_idle_cpu = cpu;
+			} else if (spare_cap > max_spare_cap_ls) {
+				max_spare_cap_ls = spare_cap;
+				max_spare_cap_cpu_ls = cpu;
+			}
 		}
-	    }
 
-	    /* Evaluate the energy impact of using this CPU. */
-	    if (!latency_sensitive && max_spare_cap_cpu >= 0 &&
+		/* Evaluate the energy impact of using this CPU. */
+		if (!latency_sensitive && max_spare_cap_cpu >= 0 &&
 					max_spare_cap_cpu != prev_cpu) {
-		    cur_delta = compute_energy(p, max_spare_cap_cpu, pd);
-		    cur_delta -= base_energy_pd;
-		    if (cur_delta < best_delta) {
-			best_delta = cur_delta;
+			cur_delta = compute_energy(p, max_spare_cap_cpu, pd);
+			cur_delta -= base_energy_pd;
+			if (cur_delta < best_delta) {
+				best_delta = cur_delta;
 				best_energy_cpu = max_spare_cap_cpu;
-		    }
-	    }
+			}
+		}
 	}
 unlock:
 	rcu_read_unlock();

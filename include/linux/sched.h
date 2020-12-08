@@ -3949,6 +3949,11 @@ extern long sched_getaffinity(pid_t pid, struct cpumask *mask);
 extern struct task_group root_task_group;
 #endif /* CONFIG_CGROUP_SCHED */
 
+#ifdef CONFIG_SMP
+/* Returns effective CPU energy utilization, as seen by the scheduler */
+unsigned long sched_cpu_util(int cpu, unsigned long max);
+#endif /* CONFIG_SMP */
+
 extern int task_can_switch_user(struct user_struct *up,
 					struct task_struct *tsk);
 

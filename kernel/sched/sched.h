@@ -2166,7 +2166,7 @@ static inline unsigned long capacity_orig_of(int cpu)
 }
 
 /**
- * enum schedutil_type - CPU utilization type
+ * enum cpu_util_type - CPU utilization type
  * @FREQUENCY_UTIL:	Utilization used to select frequency
  * @ENERGY_UTIL:	Utilization used during energy calculation
  *
@@ -2175,14 +2175,15 @@ static inline unsigned long capacity_orig_of(int cpu)
  * enum is used within schedutil_freq_util() to differentiate the types of
  * utilization expected by the callers, and adjust the aggregation accordingly.
  */
-enum schedutil_type {
+enum cpu_util_type {
     FREQUENCY_UTIL,
     ENERGY_UTIL,
 };
 
+#endif
 
-unsigned long schedutil_cpu_util(int cpu, unsigned long util_cfs,
-				 unsigned long max, enum schedutil_type type,
+unsigned long effective_cpu_util(int cpu, unsigned long util_cfs,
+				 unsigned long max, enum cpu_util_type type,
 				 struct task_struct *p);
 
 static inline unsigned long cpu_bw_dl(struct rq *rq)
@@ -2200,7 +2201,6 @@ static inline unsigned long cpu_util_rt(struct rq *rq)
     return READ_ONCE(rq->avg_rt.util_avg);
 }
 
-#endif
 
 /**
  * Amount of capacity of a CPU that is (estimated to be) used by CFS tasks
@@ -2253,9 +2253,6 @@ static inline unsigned long cpu_util(int cpu)
 
 	return min_t(unsigned long, util, capacity_orig_of(cpu));
 }
-
-
-#endif
 
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {
