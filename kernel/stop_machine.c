@@ -21,7 +21,6 @@
 #include <linux/smpboot.h>
 #include <linux/atomic.h>
 #include <linux/nmi.h>
-#include <linux/sched/wake_q.h>
 #include <linux/slab.h>
 
 /* the actual stopper, one per every possible cpu, enabled on online cpus */
@@ -640,9 +639,9 @@ int stop_machine(cpu_stop_fn_t fn, void *data, const struct cpumask *cpus)
 	int ret;
 
 	/* No CPUs can come up or down during this. */
-	cpus_read_lock();
+	get_online_cpus();
 	ret = stop_machine_cpuslocked(fn, data, cpus);
-	cpus_read_unlock();
+	put_online_cpus();
 	return ret;
 }
 EXPORT_SYMBOL_GPL(stop_machine);
