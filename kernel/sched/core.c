@@ -5970,6 +5970,39 @@ static void migrate_tasks(struct rq *dead_rq, struct rq_flags *rf, bool force)
 	rq->stop = stop;
 }
 
+static int drain_rq_cpu_stop(void *data)
+{
+	struct rq *rq = this_rq();
+	struct rq_flags rf;
+
+	rq_lock_irqsave(rq, &rf);
+	migrate_tasks(rq, &rf, false);
+	rq_unlock_irqrestore(rq, &rf);
+
+	return 0;
+}
+
+int sched_cpu_drain_rq(unsigned int cpu)
+{
+	struct cpu_stop_work *rq_drain = &(cpu_rq(cpu)->drain);
+	struct cpu_stop_done *rq_drain_done = &(cpu_rq(cpu)->drain_done);
+
+	if (idle_cpu(cpu)) {
+		rq_drain->done = NULL;
+		return 0;
+	}
+
+	return stop_one_cpu_async(cpu, drain_rq_cpu_stop, NULL, rq_drain,
+				  rq_drain_done);
+}
+
+void sched_cpu_drain_rq_wait(unsigned int cpu)
+{
+	struct cpu_stop_work *rq_drain = &(cpu_rq(cpu)->drain);
+
+	if (rq_drain->done)
+		cpu_stop_work_wait(rq_drain);
+}
 #endif /* CONFIG_HOTPLUG_CPU */
 
 void set_rq_online(struct rq *rq)
@@ -6055,44 +6088,6 @@ static int cpuset_cpu_inactive(unsigned int cpu)
 		partition_sched_domains(1, NULL, NULL);
 	}
 	return 0;
-}
-
-#ifdef CONFIG_SCHED_SMT
-atomic_t sched_smt_present = ATOMIC_INIT(0);
-#endif
-
-static int drain_rq_cpu_stop(void *data)
-{
-	struct rq *rq = this_rq();
-	struct rq_flags rf;
-
-	rq_lock_irqsave(rq, &rf);
-	migrate_tasks(rq, &rf, false);
-	rq_unlock_irqrestore(rq, &rf);
-
-	return 0;
-}
-
-int sched_cpu_drain_rq(unsigned int cpu)
-{
-	struct cpu_stop_work *rq_drain = &(cpu_rq(cpu)->drain);
-	struct cpu_stop_done *rq_drain_done = &(cpu_rq(cpu)->drain_done);
-
-	if (idle_cpu(cpu)) {
-		rq_drain->done = NULL;
-		return 0;
-	}
-
-	return stop_one_cpu_async(cpu, drain_rq_cpu_stop, NULL, rq_drain,
-				  rq_drain_done);
-}
-
-void sched_cpu_drain_rq_wait(unsigned int cpu)
-{
-	struct cpu_stop_work *rq_drain = &(cpu_rq(cpu)->drain);
-
-	if (rq_drain->done)
-		cpu_stop_work_wait(rq_drain);
 }
 
 int sched_cpu_activate(unsigned int cpu)
