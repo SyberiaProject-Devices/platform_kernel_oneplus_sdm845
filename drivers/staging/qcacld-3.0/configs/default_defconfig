@@ -646,14 +646,10 @@ ifeq ($(CONFIG_ARCH_SDM660), y)
 CONFIG_WLAN_FEATURE_PKT_CAPTURE := y
 endif
 
-<<<<<<< HEAD
 CONFIG_WLAN_HANG_EVENT := n
-=======
+
 #Enable RX RING buffers debug
 CONFIG_DEBUG_RX_RING_BUFFER := y
 
 #Enable Hash debug
-CONFIG_RX_HASH_DEBUG := y
-
-CONFIG_WLAN_HANG_EVENT := y
->>>>>>> 3e5e78dfd282c0bd4aaf3623cbe6f9e279bf11bf
+CONFIG_RX_HASH_DEBUG := n
