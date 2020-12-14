@@ -31,6 +31,11 @@ static inline unsigned long map_util_freq(unsigned long util,
 }
 
 bool cpufreq_this_cpu_can_update(struct cpufreq_policy *policy);
+
+static inline unsigned long map_util_perf(unsigned long util)
+{
+	return util + (util >> 2);
+}
 #endif /* CONFIG_CPU_FREQ */
 
 #endif /* _LINUX_SCHED_CPUFREQ_H */
