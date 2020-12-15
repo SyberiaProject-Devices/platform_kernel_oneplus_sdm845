@@ -6225,6 +6225,12 @@ int _sched_cpu_deactivate(unsigned int cpu)
 {
 	int ret;
 
+	/*
+	 * Remove CPU from nohz.idle_cpus_mask to prevent participating in
+	 * load balancing when not active
+	 */
+	nohz_balance_exit_idle(rq);
+
 	set_cpu_active(cpu, false);
 
 #ifdef CONFIG_SCHED_SMT
