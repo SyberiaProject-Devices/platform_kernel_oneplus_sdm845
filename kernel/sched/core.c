@@ -6218,6 +6218,7 @@ int sched_cpus_activate(struct cpumask *cpus)
 int _sched_cpu_deactivate(unsigned int cpu)
 {
 	int ret;
+	struct rq *rq = cpu_rq(cpu);
 
 	/*
 	 * Remove CPU from nohz.idle_cpus_mask to prevent participating in
