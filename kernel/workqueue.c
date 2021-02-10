@@ -4736,45 +4736,6 @@ void show_workqueue_state(void)
 /* used to show worker information through /proc/PID/{comm,stat,status} */
 void wq_worker_comm(char *buf, size_t size, struct task_struct *task)
 {
-	struct worker *worker;
-	struct worker_pool *pool;
-	int off;
-
-	/* always show the actual comm */
-	off = strscpy(buf, task->comm, size);
-	if (off < 0)
-		return;
-
-	/* stabilize worker pool association */
-	mutex_lock(&wq_pool_attach_mutex);
-
-	worker = kthread_data(task);
-	pool = worker->pool;
-
-	if (pool) {
-		spin_lock_irq(&pool->lock);
-		/*
-		 * ->desc tracks information (wq name or set_worker_desc())
-		 * for the latest execution.  If current, prepend '+',
-		 * otherwise '-'.
-		 */
-		if (worker->desc[0] != '\0') {
-			if (worker->current_work)
-				scnprintf(buf + off, size - off, "+%s",
-					  worker->desc);
-			else
-				scnprintf(buf + off, size - off, "-%s",
-					  worker->desc);
-		}
-		spin_unlock_irq(&pool->lock);
-	}
-
-	mutex_unlock(&wq_pool_attach_mutex);
-}
-
-/* used to show worker information through /proc/PID/{comm,stat,status} */
-void wq_worker_comm(char *buf, size_t size, struct task_struct *task)
-{
 	int off;
 
 	/* always show the actual comm */
@@ -4905,16 +4866,6 @@ static void rebind_workers(struct worker_pool *pool)
 						  pool->attrs->cpumask) < 0);
 
 	raw_spin_lock_irq(&pool->lock);
-
-	/*
-	 * XXX: CPU hotplug notifiers are weird and can call DOWN_FAILED
-	 * w/o preceding DOWN_PREPARE.  Work around it.  CPU hotplug is
-	 * being reworked and this can go away in time.
-	 */
-	if (!(pool->flags & POOL_DISASSOCIATED)) {
-		spin_unlock_irq(&pool->lock);
-		return;
-	}
 
 	pool->flags &= ~POOL_DISASSOCIATED;
 
