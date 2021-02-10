@@ -1068,6 +1068,14 @@ static inline void rq_clock_cancel_skipupdate(struct rq *rq)
 struct rq_flags {
 	unsigned long flags;
 	struct pin_cookie cookie;
+#ifdef CONFIG_SCHED_DEBUG
+	/*
+	 * A copy of (rq::clock_update_flags & RQCF_UPDATED) for the
+	 * current pin context is stashed here in case it needs to be
+	 * restored in rq_repin_lock().
+	 */
+	unsigned int clock_update_flags;
+#endif
 };
 
 static inline void rq_pin_lock(struct rq *rq, struct rq_flags *rf)
