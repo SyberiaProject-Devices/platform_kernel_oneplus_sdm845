@@ -2604,14 +2604,17 @@ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
 
 void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
 {
-	const struct cpumask *cs_mask = task_cs(tsk)->cpus_allowed;
 	const struct cpumask *possible_mask = task_cpu_possible_mask(tsk);
-
-	if (!cpumask_subset(cs_mask, possible_mask))
-		return; /* select_fallback_rq will try harder */
+	const struct cpumask *cs_mask;
 
 	rcu_read_lock();
+	cs_mask = task_cs(tsk)->cpus_allowed;
+
+	if (!cpumask_subset(cs_mask, possible_mask))
+		goto unlock; /* select_fallback_rq will try harder */
+
 	do_set_cpus_allowed(tsk, cs_mask);
+unlock:
 	rcu_read_unlock();
 
 	/*
