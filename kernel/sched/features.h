@@ -99,6 +99,11 @@ SCHED_FEAT(ENERGY_AWARE, false)
 #endif
 
 /*
+ * Fast pre-selection of CPU candidates for EAS.
+ */
+SCHED_FEAT(FIND_BEST_TARGET, false)
+
+/*
  * Energy aware scheduling algorithm choices:
  * EAS_PREFER_IDLE
  *   Direct tasks in a schedtune.prefer_idle=1 group through
