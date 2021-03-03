@@ -10,6 +10,7 @@
 #include <linux/sched/deadline.h>
 #include <linux/kernel_stat.h>
 #include <linux/binfmts.h>
+#include <linux/bitops.h>
 #include <linux/energy_model.h>
 #include <linux/mutex.h>
 #include <linux/psi.h>
