@@ -297,7 +297,7 @@ static void __hrtick_restart(struct rq *rq)
 	struct hrtimer *timer = &rq->hrtick_timer;
 	ktime_t time = rq->hrtick_time;
 
-	hrtimer_start(timer, time, HRTIMER_MODE_ABS_PINNED_HARD);
+	hrtimer_start(timer, time, HRTIMER_MODE_ABS_PINNED);
 }
 
 /*
