@@ -599,11 +599,9 @@ static struct drm_mm_node *drm_mm_search_free_in_range_generic(const struct drm_
  */
 void drm_mm_replace_node(struct drm_mm_node *old, struct drm_mm_node *new)
 {
-	struct drm_mm *mm = old->mm;
-
 	list_replace(&old->node_list, &new->node_list);
 	list_replace(&old->hole_stack, &new->hole_stack);
-	rb_replace_node_cached(&old->rb, &new->rb, &mm->interval_tree);
+	rb_replace_node(&old->rb, &new->rb, &old->mm->interval_tree);
 	new->hole_follows = old->hole_follows;
 	new->mm = old->mm;
 	new->start = old->start;
