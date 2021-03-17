@@ -7129,8 +7129,16 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 	/* Bail out if no candidate was found. */
 	weight = cpumask_weight(candidates);
-	if (!weight)
-		goto unlock;
+	if (!weight) {
+		if (schedtune_prefer_idle(p))
+			/*
+			 * Now let the search in
+			 * select_task_rq_fair continue.
+			 */
+			goto fail;
+		else
+			goto unlock;
+	}
 
 	/* If there is only one sensible candidate, select it now. */
 	cpu = cpumask_first(candidates);
@@ -7856,6 +7864,7 @@ enum migration_type {
 #define LBF_SOME_PINNED	0x08
 #define LBF_NOHZ_STATS	0x10
 #define LBF_NOHZ_AGAIN	0x20
+#define LBF_IGNORE_BIG_TASKS 0x100
 
 struct lb_env {
 	struct sched_domain	*sd;
@@ -8119,12 +8128,17 @@ static int detach_tasks(struct lb_env *env)
 	unsigned long util, load;
 	struct task_struct *p;
 	int detached = 0;
+	int orig_loop = env->loop;
 
 	lockdep_assert_held(&env->src_rq->lock);
 
 	if (env->imbalance <= 0)
 		return 0;
 
+	if (capacity_orig_of(env->dst_cpu) < capacity_orig_of(env->src_cpu))
+		env->flags |= LBF_IGNORE_BIG_TASKS;
+
+redo:
 	while (!list_empty(tasks)) {
 		/*
 		 * We don't want to steal all, otherwise we may be treated likewise,
@@ -8226,6 +8240,13 @@ static int detach_tasks(struct lb_env *env)
 next:
 		list_move(&p->se.group_node, tasks);
 	}
+
+	if (env->flags & LBF_IGNORE_BIG_TASKS && !detached) {
+		tasks = &env->src_rq->cfs_tasks;
+		env->flags &= ~LBF_IGNORE_BIG_TASKS;
+		env->loop = orig_loop;
+		goto redo;
+    }
 
 	/*
 	 * Right now, this is one of only two places we collect this stat
@@ -11096,10 +11117,11 @@ static int newidle_balance(struct rq *this_rq, struct rq_flags *rf)
 		update_next_balance(sd, &next_balance);
 
 		/*
-		 * Stop searching for tasks to pull if there are
-		 * now runnable tasks on this rq.
+		 * Stop searching for tasks to pull if there are now runnable
+		 * tasks on this rq or if active migration kicked in.
 		 */
-		if (pulled_task || this_rq->nr_running > 0)
+		if (pulled_task || this_rq->nr_running > 0 ||
+		    !continue_balancing)
 			break;
 	}
 	rcu_read_unlock();
