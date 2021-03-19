@@ -1786,6 +1786,7 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
 	struct timerqueue_node *node;
 	struct timerqueue_head pinned;
 	int is_pinned;
+	bool is_hotplug = !cpu_online(old_base->cpu_base->cpu);
 
 	timerqueue_init_head(&pinned);
 
