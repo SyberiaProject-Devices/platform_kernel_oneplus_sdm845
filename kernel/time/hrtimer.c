@@ -1597,6 +1597,7 @@ int hrtimers_prepare_cpu(unsigned int cpu)
 	cpu_base->cpu = cpu;
 	cpu_base->hres_active = 0;
 	cpu_base->expires_next = KTIME_MAX;
+        cpu_base->hang_detected = 0;
 	return 0;
 }
 
