@@ -204,9 +204,9 @@ void touch_all_softlockup_watchdogs(void)
 	 * do we care if a 0 races with a timestamp?
 	 * all it means is the softlock check starts one cycle later
 	 */
-	for_each_watchdog_cpu(cpu)
-		per_cpu(watchdog_touch_ts, cpu) = 0;
-	wq_watchdog_touch(-1);
+	for_each_cpu(cpu, &watchdog_allowed_mask) {
+		wq_watchdog_touch(cpu);
+	}
 }
 
 void touch_softlockup_watchdog_sync(void)
