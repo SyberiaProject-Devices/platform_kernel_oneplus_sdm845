@@ -420,7 +420,7 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
 
 static int cpu_cpu_flags(void)
 {
-	return NULL;
+	return 0;
 }
 
 static inline int cpu_corepower_flags(void)
