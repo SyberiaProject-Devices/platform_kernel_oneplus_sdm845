@@ -626,9 +626,6 @@ EXPORT_SYMBOL_GPL(irq_create_mapping);
  * locations. For use by controllers that already have static mappings
  * to insert in to the domain.
  *
- * Non-linear users can use irq_create_identity_mapping() for IRQ-at-a-time
- * domain insertion.
- *
  * 0 is returned upon success, while any failure to establish a static
  * mapping is treated as an error.
  */
