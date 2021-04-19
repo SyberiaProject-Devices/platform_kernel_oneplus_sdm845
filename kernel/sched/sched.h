@@ -22,7 +22,6 @@
 
 #include "cpupri.h"
 #include "cpudeadline.h"
-#include "tune.h"
 #include <linux/cgroup.h>
 
 #ifdef CONFIG_SCHED_DEBUG

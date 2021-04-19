@@ -54,7 +54,6 @@
 #include <linux/shm.h>
 #include <linux/kcov.h>
 
-#include "sched/tune.h"
 #include <linux/rcuwait.h>
 #include <linux/compat.h>
 
