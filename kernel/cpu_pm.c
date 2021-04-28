@@ -22,7 +22,6 @@
 #include <linux/spinlock.h>
 #include <linux/syscore_ops.h>
 
-bool from_suspend;
 
 static ATOMIC_NOTIFIER_HEAD(cpu_pm_notifier_chain);
 
@@ -186,7 +185,6 @@ static int cpu_pm_suspend(void)
 {
 	int ret;
 
-	from_suspend = true;
 	ret = cpu_pm_enter();
 	if (ret)
 		return ret;
@@ -197,7 +195,6 @@ static int cpu_pm_suspend(void)
 
 static void cpu_pm_resume(void)
 {
-	from_suspend = false;
 	cpu_cluster_pm_exit(0);
 	cpu_pm_exit();
 }
