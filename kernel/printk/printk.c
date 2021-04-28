@@ -2142,8 +2142,6 @@ void resume_console(void)
 	console_unlock();
 }
 
-#ifdef CONFIG_CONSOLE_FLUSH_ON_HOTPLUG
-
 /**
  * console_cpu_notify - print deferred console messages after CPU hotplug
  * @cpu: unused
@@ -2159,8 +2157,6 @@ static int console_cpu_notify(unsigned int cpu)
 	console_unlock();
 	return 0;
 }
-
-#endif
 
 /**
  * console_lock - lock the console system for exclusive use.
