@@ -49,18 +49,10 @@
 #include <linux/ip.h>
 #endif /* FEATURE_TSO */
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0)
-
-#define qdf_nbuf_users_inc atomic_inc
-#define qdf_nbuf_users_dec atomic_dec
-#define qdf_nbuf_users_set atomic_set
-#define qdf_nbuf_users_read atomic_read
-#else
 #define qdf_nbuf_users_inc refcount_inc
 #define qdf_nbuf_users_dec refcount_dec
 #define qdf_nbuf_users_set refcount_set
 #define qdf_nbuf_users_read refcount_read
-#endif /* KERNEL_VERSION(4, 13, 0) */
 
 #define IEEE80211_RADIOTAP_VHT_BW_20	0
 #define IEEE80211_RADIOTAP_VHT_BW_40	1
