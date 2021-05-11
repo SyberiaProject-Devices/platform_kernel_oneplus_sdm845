@@ -107,7 +107,7 @@ void fsnotify_get_mark(struct fsnotify_mark *mark)
 
 void fsnotify_put_mark(struct fsnotify_mark *mark)
 {
-	if (atomic_dec_and_test(&mark->refcnt)) {
+	if (refcount_dec_and_test(&mark->refcnt)) {
 		if (mark->group)
 			fsnotify_put_group(mark->group);
 		mark->free_mark(mark);
