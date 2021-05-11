@@ -1361,7 +1361,7 @@ restart:
 		path_get(&otheru->path);
 		newu->path = otheru->path;
 	}
-	atomic_inc(&otheru->addr->refcnt);
+	refcount_inc(&otheru->addr->refcnt);
 	smp_store_release(&newu->addr, otheru->addr);
 
 	/* Set credentials */

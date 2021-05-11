@@ -143,7 +143,7 @@ static int neigh_forced_gc(struct neigh_table *tbl)
 			 * - it is not permanent
 			 */
 			write_lock(&n->lock);
-			if (atomic_read(&n->refcnt) == 1 &&
+			if (refcount_read(&n->refcnt) == 1 &&
 			    !(n->nud_state & NUD_PERMANENT)) {
 				rcu_assign_pointer(*np,
 					rcu_dereference_protected(n->next,

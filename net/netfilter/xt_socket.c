@@ -210,7 +210,7 @@ struct sock *xt_socket_lookup_slow_v4(struct net *net,
 #endif
 
 	if (sk)
-		atomic_inc(&sk->sk_refcnt);
+		refcount_inc(&sk->sk_refcnt);
 	else
 		sk = xt_socket_get_sock_v4(dev_net(skb->dev), data_skb, doff,
 					   protocol, saddr, daddr, sport,
@@ -401,7 +401,7 @@ struct sock *xt_socket_lookup_slow_v6(struct net *net,
 	}
 
 	if (sk)
-		atomic_inc(&sk->sk_refcnt);
+		refcount_inc(&sk->sk_refcnt);
 	else
 		sk = xt_socket_get_sock_v6(dev_net(skb->dev), data_skb, doff,
 					   tproto, saddr, daddr, sport, dport,
