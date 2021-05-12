@@ -618,9 +618,7 @@ void rcu_user_enter(void)
 
 	lockdep_assert_irqs_disabled();
 
-	instrumentation_begin();
 	do_nocb_deferred_wakeup(rdp);
-	instrumentation_end();
 
 	rcu_eqs_enter(true);
 }
