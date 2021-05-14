@@ -1386,7 +1386,7 @@ static __always_inline int __rt_mutex_lock(struct rt_mutex *lock, long state,
 
 	ret = rt_mutex_slowlock(lock, state, NULL, RT_MUTEX_MIN_CHAINWALK);
 	if (ret)
-		mutex_release(&lock->dep_map, _RET_IP_);
+		mutex_release(&lock->dep_map, 1, _RET_IP_);
 	return ret;
 }
 
@@ -1473,7 +1473,7 @@ EXPORT_SYMBOL_GPL(rt_mutex_trylock);
  */
 void __sched rt_mutex_unlock(struct rt_mutex *lock)
 {
-	mutex_release(&lock->dep_map, _RET_IP_);
+	mutex_release(&lock->dep_map, 1, _RET_IP_);
 	if (likely(rt_mutex_cmpxchg_release(lock, current, NULL)))
 		return;
 
