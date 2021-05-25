@@ -950,7 +950,6 @@ static int mhi_uci_client_open(struct inode *mhi_inode,
 	file_handle->private_data = uci_handle;
 
 	return 0;
-
 }
 
 static int mhi_uci_client_release(struct inode *mhi_inode,
