@@ -2136,7 +2136,15 @@ void force_compatible_cpus_allowed_ptr(struct task_struct *p)
 	cpumask_var_t new_mask;
 	const struct cpumask *override_mask = task_cpu_possible_mask(p);
 
-	if (!alloc_cpumask_var(&new_mask, GFP_KERNEL))
+	alloc_cpumask_var(&new_mask, GFP_KERNEL);
+
+	/*
+	 * __migrate_task() can fail silently in the face of concurrent
+	 * offlining of the chosen destination CPU, so take the hotplug
+	 * lock to ensure that the migration succeeds.
+	 */
+	get_online_cpus();
+	if (!cpumask_available(new_mask))
 		goto out_set_mask;
 
 	if (!restrict_cpus_allowed_ptr(p, new_mask, override_mask))
@@ -2156,8 +2164,9 @@ out_set_mask:
 				cpumask_pr_args(override_mask));
 	}
 
-	set_cpus_allowed_ptr(p, override_mask);
+	WARN_ON(set_cpus_allowed_ptr(p, override_mask));
 out_free_mask:
+	put_online_cpus();
 	free_cpumask_var(new_mask);
 }
 
