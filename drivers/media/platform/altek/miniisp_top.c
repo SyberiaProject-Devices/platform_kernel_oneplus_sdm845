@@ -369,7 +369,7 @@ int mini_isp_pure_bypass(u16 mini_isp_mode)
 
 	/* load boot fw file */
 	mini_isp_device = mini_isp_getdev();
-	if (mini_isp_device != NULL && byass_setting_file_location != NULL) {
+	if (mini_isp_device && byass_setting_file_location) {
 		file_name = byass_setting_file_location;
 		misp_info("%s, fw name: %s", __func__, file_name);
 
