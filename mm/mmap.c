@@ -584,11 +584,11 @@ static inline struct vm_area_struct *vma_next(struct mm_struct *mm,
 static inline int
 munmap_vma_range(struct mm_struct *mm, unsigned long start, unsigned long len,
 		 struct vm_area_struct **pprev, struct rb_node ***link,
-		 struct rb_node **parent, struct list_head *uf)
+		 struct rb_node **parent)
 {
 
 	while (find_vma_links(mm, start, start + len, pprev, link, parent))
-		if (do_munmap(mm, start, len, uf))
+		if (do_munmap(mm, start, len))
 			return -ENOMEM;
 
 	return 0;
@@ -1744,8 +1744,8 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
 			return -ENOMEM;
 	}
 
-	/* Clear old maps, set up prev, rb_link, rb_parent, and uf */
-	if (munmap_vma_range(mm, addr, len, &prev, &rb_link, &rb_parent, uf))
+	/* Clear old maps, set up prev, rb_link, rb_parent */
+	if (munmap_vma_range(mm, addr, len, &prev, &rb_link, &rb_parent))
 		return -ENOMEM;
 	/*
 	 * Private writable mapping: check memory availability
@@ -3071,8 +3071,8 @@ static int do_brk(unsigned long addr, unsigned long len)
 	if (error)
 		return error;
 
-	/* Clear old maps, set up prev, rb_link, rb_parent, and uf */
-	if (munmap_vma_range(mm, addr, len, &prev, &rb_link, &rb_parent, uf))
+	/* Clear old maps, set up prev, rb_link, rb_parent */
+	if (munmap_vma_range(mm, addr, len, &prev, &rb_link, &rb_parent))
 		return -ENOMEM;
 
 	/* Check against address space limits *after* clearing old maps... */
