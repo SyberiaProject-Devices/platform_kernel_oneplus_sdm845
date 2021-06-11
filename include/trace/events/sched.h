@@ -116,7 +116,7 @@ static inline long __trace_sched_switch_state(bool preempt, struct task_struct *
 	 * Preemption ignores task state, therefore preempted tasks are always
 	 * RUNNING (we will not have dequeued if state != RUNNING).
 	 */
-	return preempt ? TASK_RUNNING | TASK_STATE_MAX : p->state;
+	return preempt ? TASK_RUNNING | TASK_STATE_MAX : p->__state;
 }
 #endif /* CREATE_TRACE_POINTS */
 

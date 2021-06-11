@@ -837,8 +837,8 @@ static inline void check_for_tasks(int dead_cpu)
 		if (task_cpu(p) != dead_cpu)
 			continue;
 
-		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
+		pr_warn("Task %s (pid=%d) is on cpu %d (state=%d, flags=%x)\n",
+			p->comm, task_pid_nr(p), dead_cpu, p->__state, p->flags);
 	}
 	read_unlock(&tasklist_lock);
 }

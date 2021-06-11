@@ -283,7 +283,7 @@ int handle_userfault(struct fault_env *fe, unsigned long reason)
 	struct userfaultfd_wait_queue uwq;
 	int ret;
 	bool must_wait, return_to_userland;
-	long blocking_state;
+	unsigned int blocking_state;
 
 	BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
 

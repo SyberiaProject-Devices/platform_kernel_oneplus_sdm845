@@ -288,11 +288,10 @@ extern void proc_sched_set_task(struct task_struct *p);
 				 TASK_UNINTERRUPTIBLE | __TASK_STOPPED | \
 				 __TASK_TRACED | EXIT_ZOMBIE | EXIT_DEAD)
 
-#define task_is_running(task)		(READ_ONCE((task)->state) == TASK_RUNNING)
-#define task_is_traced(task)	((task->state & __TASK_TRACED) != 0)
-#define task_is_stopped(task)	((task->state & __TASK_STOPPED) != 0)
-#define task_is_stopped_or_traced(task)	\
-			((task->state & (__TASK_STOPPED | __TASK_TRACED)) != 0)
+#define task_is_running(task)		(READ_ONCE((task)->__state) == TASK_RUNNING)
+#define task_is_traced(task)		((READ_ONCE(task->__state) & __TASK_TRACED) != 0)
+#define task_is_stopped(task)		((READ_ONCE(task->__state) & __TASK_STOPPED) != 0)
+#define task_is_stopped_or_traced(task)	((READ_ONCE(task->__state) & (__TASK_STOPPED | __TASK_TRACED)) != 0)
 
 #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
 
@@ -308,13 +307,13 @@ extern void proc_sched_set_task(struct task_struct *p);
 	do {							\
 		WARN_ON_ONCE(is_special_task_state(state_value));\
 		current->task_state_change = _THIS_IP_;		\
-		current->state = (state_value);			\
+		WRITE_ONCE(current->__state, (state_value));	\
 	} while (0)
 #define set_current_state(state_value)				\
 	do {							\
 		WARN_ON_ONCE(is_special_task_state(state_value));\
 		current->task_state_change = _THIS_IP_;		\
-		smp_store_mb(current->state, (state_value));		\
+		smp_store_mb(current->__state, (state_value));	\
 	} while (0)
 
 #define set_special_state(state_value)					\
@@ -323,7 +322,7 @@ extern void proc_sched_set_task(struct task_struct *p);
 		WARN_ON_ONCE(!is_special_task_state(state_value));	\
 		raw_spin_lock_irqsave(&current->pi_lock, flags);	\
 		current->task_state_change = _THIS_IP_;			\
-		current->state = (state_value);				\
+		WRITE_ONCE(current->__state, (state_value));		\
 		raw_spin_unlock_irqrestore(&current->pi_lock, flags);	\
 	} while (0)
 #else
@@ -340,10 +339,10 @@ extern void proc_sched_set_task(struct task_struct *p);
  * If the caller does not need such serialisation then use __set_current_state()
  */
 #define __set_current_state(state_value)				\
-	current->state = (state_value)
+	WRITE_ONCE(current->__state, (state_value))
 
 #define set_current_state(state_value)					\
-	smp_store_mb(current->state, (state_value))
+	smp_store_mb(current->__state, (state_value))
 
 /*
  * set_special_state() should be used for those states when the blocking task
@@ -355,13 +354,13 @@ extern void proc_sched_set_task(struct task_struct *p);
 	do {								\
 		unsigned long flags; /* may shadow */			\
 		raw_spin_lock_irqsave(&current->pi_lock, flags);	\
-		current->state = (state_value);				\
+		WRITE_ONCE(current->__state, (state_value));		\
 		raw_spin_unlock_irqrestore(&current->pi_lock, flags);	\
 	} while (0)
 
 #endif
 
-#define get_current_state()	READ_ONCE(current->state)
+#define get_current_state()	READ_ONCE(current->__state)
 
 /* Task command name length */
 #define TASK_COMM_LEN 16
@@ -415,7 +414,7 @@ static inline void nohz_balance_enter_idle(int cpu) { }
 /*
  * Only dump TASK_* tasks. (0 for all tasks)
  */
-extern void show_state_filter(unsigned long state_filter);
+extern void show_state_filter(unsigned int state_filter);
 
 static inline void show_state(void)
 {
@@ -1863,7 +1862,7 @@ struct task_struct {
 	 */
 	struct thread_info thread_info;
 #endif
-	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+	unsigned int __state;
 	void *stack;
 	refcount_t usage;
 	unsigned int flags;	/* per process flags, defined below */
@@ -2614,7 +2613,7 @@ static inline pid_t task_pgrp_nr(struct task_struct *tsk)
 static inline char task_state_to_char(struct task_struct *task)
 {
 	const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
-	unsigned long state = task->state;
+	unsigned int state = READ_ONCE(task->__state);
 
 	state = state ? __ffs(state) + 1 : 0;
 
@@ -3410,11 +3409,11 @@ static __always_inline void scheduler_ipi(void)
 	 */
 	preempt_fold_need_resched();
 }
-extern unsigned long wait_task_inactive(struct task_struct *, long match_state);
+extern unsigned long wait_task_inactive(struct task_struct *, unsigned int match_state);
 #else
 static inline void scheduler_ipi(void) { }
 static inline unsigned long wait_task_inactive(struct task_struct *p,
-					       long match_state)
+					       unsigned int match_state)
 {
 	return 1;
 }
@@ -3734,7 +3733,7 @@ static inline int fatal_signal_pending(struct task_struct *p)
 	return signal_pending(p) && __fatal_signal_pending(p);
 }
 
-static inline int signal_pending_state(long state, struct task_struct *p)
+static inline int signal_pending_state(unsigned int state, struct task_struct *p)
 {
 	if (!(state & (TASK_INTERRUPTIBLE | TASK_WAKEKILL)))
 		return 0;

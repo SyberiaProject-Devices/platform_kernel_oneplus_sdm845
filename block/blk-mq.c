@@ -2341,7 +2341,7 @@ EXPORT_SYMBOL_GPL(blk_mq_update_nr_hw_queues);
 static bool __blk_mq_poll(struct blk_mq_hw_ctx *hctx, struct request *rq)
 {
 	struct request_queue *q = hctx->queue;
-	long state;
+	unsigned int state;
 
 	hctx->poll_considered++;
 

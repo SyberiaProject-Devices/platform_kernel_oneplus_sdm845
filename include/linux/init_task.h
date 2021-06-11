@@ -217,7 +217,7 @@ extern struct task_group root_task_group;
 #define INIT_TASK(tsk)	\
 {									\
 	INIT_TASK_TI(tsk)						\
-	.state		= 0,						\
+	.__state	= 0,						\
 	.stack		= init_stack,					\
 	.usage		= REFCOUNT_INIT(2),				\
 	.flags		= PF_KTHREAD,					\
