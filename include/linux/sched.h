@@ -361,6 +361,8 @@ extern void proc_sched_set_task(struct task_struct *p);
 
 #endif
 
+#define get_current_state()	READ_ONCE(current->state)
+
 /* Task command name length */
 #define TASK_COMM_LEN 16
 
