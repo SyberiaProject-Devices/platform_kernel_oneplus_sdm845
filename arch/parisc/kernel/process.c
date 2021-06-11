@@ -284,7 +284,7 @@ get_wchan(struct task_struct *p)
 	unsigned long ip;
 	int count = 0;
 
-	if (!p || p == current || p->state == TASK_RUNNING)
+	if (!p || p == current || task_is_running(p))
 		return 0;
 
 	/*
@@ -295,6 +295,9 @@ get_wchan(struct task_struct *p)
 	do {
 		if (unwind_once(&info) < 0)
 			return 0;
+
+		if (task_is_running(p))
+                        return 0;
 		ip = info.ip;
 		if (!in_sched_functions(ip))
 			return ip;

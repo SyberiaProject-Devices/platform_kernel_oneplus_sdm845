@@ -288,6 +288,7 @@ extern void proc_sched_set_task(struct task_struct *p);
 				 TASK_UNINTERRUPTIBLE | __TASK_STOPPED | \
 				 __TASK_TRACED | EXIT_ZOMBIE | EXIT_DEAD)
 
+#define task_is_running(task)		(READ_ONCE((task)->state) == TASK_RUNNING)
 #define task_is_traced(task)	((task->state & __TASK_TRACED) != 0)
 #define task_is_stopped(task)	((task->state & __TASK_STOPPED) != 0)
 #define task_is_stopped_or_traced(task)	\
