@@ -6659,10 +6659,7 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		max_util = max(max_util, cpu_util);
 	}
 
-	if (!energy)
-		energy = em_pd_energy(pd->em_pd, max_util, sum_util);
-
-	return energy;
+	return em_pd_energy(pd->em_pd, max_util, sum_util, _cpu_cap);
 }
 
 static DEFINE_PER_CPU(cpumask_t, energy_cpus);
