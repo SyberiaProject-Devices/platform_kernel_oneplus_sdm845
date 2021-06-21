@@ -736,6 +736,10 @@ osm_cpufreq_fast_switch(struct cpufreq_policy *policy, unsigned int target_freq)
 	clk_osm_write_reg(c, index,
 			  DCVS_PERF_STATE_DESIRED_REG(c->core_num, is_sdm845v1));
 
+	arch_set_freq_scale(policy->related_cpus,
+			    policy->freq_table[index].frequency,
+			    policy->cpuinfo.max_freq);
+
 	return policy->freq_table[index].frequency;
 }
 
