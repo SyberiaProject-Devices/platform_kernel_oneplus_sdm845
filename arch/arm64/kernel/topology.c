@@ -66,6 +66,55 @@ static void set_capacity_scale(unsigned int cpu, unsigned long capacity)
 	per_cpu(cpu_scale, cpu) = capacity;
 }
 
+DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
+
+unsigned long topology_get_freq_scale(struct sched_domain *sd, int cpu)
+{
+    return per_cpu(freq_scale, cpu);
+}
+
+
+DEFINE_PER_CPU(unsigned long, max_cpu_freq);
+void arch_set_freq_scale(struct cpumask *cpus, unsigned long cur_freq,
+			unsigned long max_freq)
+{
+	unsigned long scale;
+	int i;
+
+	scale = (cur_freq << SCHED_CAPACITY_SHIFT) / max_freq;
+
+	for_each_cpu(i, cpus) {
+		per_cpu(freq_scale, i) = scale;
+		per_cpu(max_cpu_freq, i) = max_freq;
+	}
+}
+
+DEFINE_PER_CPU(unsigned long, max_freq_scale) = SCHED_CAPACITY_SCALE;
+
+unsigned long topology_get_max_freq_scale(struct sched_domain *sd, int cpu)
+{
+    return per_cpu(max_freq_scale, cpu);
+}
+
+void arch_set_max_freq_scale(struct cpumask *cpus,
+				     unsigned long policy_max_freq)
+{
+	unsigned long scale, max_freq;
+	int cpu = cpumask_first(cpus);
+
+	if (cpu > nr_cpu_ids)
+		return;
+
+	max_freq = per_cpu(max_cpu_freq, cpu);
+	if (!max_freq)
+		return;
+
+	scale = (policy_max_freq << SCHED_CAPACITY_SHIFT) / max_freq;
+
+	for_each_cpu(cpu, cpus)
+		per_cpu(max_freq_scale, cpu) = scale;
+}
+
 static int __init get_cpu_for_node(struct device_node *node)
 {
 	struct device_node *cpu_node;

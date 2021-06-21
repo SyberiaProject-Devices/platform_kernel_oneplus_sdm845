@@ -34,12 +34,9 @@ int pcibus_to_node(struct pci_bus *bus);
 #endif /* CONFIG_NUMA */
 struct sched_domain;
 #ifdef CONFIG_CPU_FREQ
-#define arch_scale_freq_capacity cpufreq_scale_freq_capacity
-extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
-#define arch_scale_max_freq_capacity cpufreq_scale_max_freq_capacity
-extern unsigned long cpufreq_scale_max_freq_capacity(struct sched_domain *sd, int cpu);
+#define arch_scale_freq_capacity topology_get_freq_scale
+#define arch_scale_max_freq_capacity topology_get_max_freq_scale
 #define arch_scale_min_freq_capacity cpufreq_scale_min_freq_capacity
-extern unsigned long cpufreq_scale_min_freq_capacity(struct sched_domain *sd, int cpu);
 #endif
 #define arch_scale_cpu_capacity scale_cpu_capacity
 extern unsigned long scale_cpu_capacity(struct sched_domain *sd, int cpu);
@@ -52,6 +49,14 @@ extern void update_cpu_power_capacity(int cpu);
 extern unsigned long topology_get_thermal_pressure(int cpu);
 extern void arch_set_thermal_pressure(struct cpumask *cpus,
 				       unsigned long th_pressure);
+
+extern void arch_set_freq_scale(struct cpumask *cpus, unsigned long cur_freq,
+					 unsigned long max_freq);
+extern void arch_set_max_freq_scale(struct cpumask *cpus,
+				     unsigned long policy_max_freq);
+
+extern unsigned long topology_get_freq_scale(struct sched_domain *sd, int cpu);
+extern unsigned long topology_get_max_freq_scale(struct sched_domain *sd, int cpu);
 
 #include <asm-generic/topology.h>
 
