@@ -60,9 +60,6 @@ static void log_modem_sfr(void)
 	}
 
 	strlcpy(reason, smem_reason, min(size, MAX_SSR_REASON_LEN));
-	function_name = parse_function_builtin_return_address((unsigned long)__builtin_return_address(0));
-        save_modem_dump_reason_to_device_info(reason);
-	save_dump_reason_to_smem(reason, function_name);
 	pr_err("modem subsystem failure reason: %s.\n", reason);
 }
 
