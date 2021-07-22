@@ -6636,8 +6636,8 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 	struct cpumask *pd_mask = perf_domain_span(pd);
 	unsigned long cpu_cap = arch_scale_cpu_capacity(NULL, cpumask_first(pd_mask));
 	unsigned long max_util = 0, sum_util = 0;
-	unsigned long energy = 0;
 	unsigned long _cpu_cap = cpu_cap;
+	unsigned long energy = 0;
 	int cpu;
 
 	_cpu_cap -= arch_scale_thermal_pressure(cpumask_first(pd_mask));
@@ -6694,7 +6694,10 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		max_util = max(max_util, min(cpu_util, _cpu_cap));
 	}
 
-	return em_pd_energy(pd->em_pd, max_util, sum_util, _cpu_cap);
+	if (!energy)
+		energy = em_pd_energy(pd->em_pd, max_util, sum_util, _cpu_cap);
+
+	return energy;
 }
 
 static DEFINE_PER_CPU(cpumask_t, energy_cpus);
@@ -6744,11 +6747,11 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 	unsigned long prev_delta = ULONG_MAX, best_delta = ULONG_MAX;
 	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
 	int max_spare_cap_cpu_ls = prev_cpu, best_idle_cpu = -1;
+	int cpu, best_energy_cpu = prev_cpu, target = -1;
 	unsigned long max_spare_cap_ls = 0, target_cap;
 	unsigned long cpu_cap, util, base_energy = 0;
 	bool boosted, latency_sensitive = false;
 	unsigned int min_exit_lat = UINT_MAX;
-	int cpu, best_energy_cpu = prev_cpu;
 	struct cpuidle_state *idle;
 	struct sched_domain *sd;
 	struct perf_domain *pd;
@@ -6761,14 +6764,14 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 	rcu_read_lock();
 	pd = rcu_dereference(rd->pd);
 	if (!pd || READ_ONCE(rd->overutilized))
-		goto fail;
+		goto unlock;
 
 	cpu = smp_processor_id();
 	if (sync && cpu_rq(cpu)->nr_running == 1 &&
-		cpumask_test_cpu(cpu, p->cpus_ptr) &&
-		task_fits_capacity(p, capacity_of(cpu))) {
-			rcu_read_unlock();
-			return cpu;
+	    cpumask_test_cpu(cpu, p->cpus_ptr) &&
+	    task_fits_capacity(p, capacity_of(cpu))) {
+		rcu_read_unlock();
+		return cpu;
 	}
 
 	/*
@@ -6779,7 +6782,9 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 	while (sd && !cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
 		sd = sd->parent;
 	if (!sd)
-	    goto fail;
+		goto unlock;
+
+	target = prev_cpu;
 
 	if (!task_util_est(p))
 		goto unlock;
@@ -6790,21 +6795,18 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 	for (; pd; pd = pd->next) {
 		unsigned long cur_delta, spare_cap, max_spare_cap = 0;
+		bool compute_prev_delta = false;
 		unsigned long base_energy_pd;
 		int max_spare_cap_cpu = -1;
-
-		/* Compute the 'base' energy of the pd, without @p */
-		base_energy_pd = compute_energy(p, -1, pd);
-		base_energy += base_energy_pd;
 
 		for_each_cpu_and(cpu, perf_domain_span(pd), sched_domain_span(sd)) {
 			if (!cpumask_test_cpu(cpu, p->cpus_ptr))
 				continue;
 
-		util = cpu_util_next(cpu, p, cpu);
-		cpu_cap = capacity_of(cpu);
-		spare_cap = cpu_cap;
-		lsub_positive(&spare_cap, util);
+			util = cpu_util_next(cpu, p, cpu);
+			cpu_cap = capacity_of(cpu);
+			spare_cap = cpu_cap;
+			lsub_positive(&spare_cap, util);
 
 			/*
 			 * Skip CPUs that cannot satisfy the capacity request.
@@ -6817,18 +6819,14 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			if (!fits_capacity(util, cpu_cap))
 				continue;
 
-			/* Always use prev_cpu as a candidate. */
 			if (!latency_sensitive && cpu == prev_cpu) {
-				prev_delta = compute_energy(p, prev_cpu, pd);
-				prev_delta -= base_energy_pd;
-				best_delta = min(best_delta, prev_delta);
-			}
-
-			/*
-			 * Find the CPU with the maximum spare capacity in
-			 * the performance domain
-			 */
-			if (spare_cap > max_spare_cap) {
+				/* Always use prev_cpu as a candidate. */
+				compute_prev_delta = true;
+			} else if (spare_cap > max_spare_cap) {
+				/*
+				 * Find the CPU with the maximum spare capacity
+				 * in the performance domain.
+				 */
 				max_spare_cap = spare_cap;
 				max_spare_cap_cpu = cpu;
 			}
@@ -6844,8 +6842,8 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 					continue;
 				idle = idle_get_state(cpu_rq(cpu));
 				if (idle && idle->exit_latency > min_exit_lat &&
-					cpu_cap == target_cap)
-						continue;
+						cpu_cap == target_cap)
+					continue;
 
 				if (idle)
 					min_exit_lat = idle->exit_latency;
@@ -6857,10 +6855,27 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			}
 		}
 
-		/* Evaluate the energy impact of using this CPU. */
-		if (!latency_sensitive && max_spare_cap_cpu >= 0 &&
-					max_spare_cap_cpu != prev_cpu) {
+		if (!latency_sensitive && max_spare_cap_cpu < 0 && !compute_prev_delta)
+			continue;
+
+		/* Compute the 'base' energy of the pd, without @p */
+		base_energy_pd = compute_energy(p, -1, pd);
+		base_energy += base_energy_pd;
+
+		/* Evaluate the energy impact of using prev_cpu. */
+		if (compute_prev_delta) {
+			prev_delta = compute_energy(p, prev_cpu, pd);
+			if (prev_delta < base_energy_pd)
+				goto unlock;
+			prev_delta -= base_energy_pd;
+			best_delta = min(best_delta, prev_delta);
+		}
+
+		/* Evaluate the energy impact of using max_spare_cap_cpu. */
+		if (max_spare_cap_cpu >= 0) {
 			cur_delta = compute_energy(p, max_spare_cap_cpu, pd);
+			if (cur_delta < base_energy_pd)
+				goto unlock;
 			cur_delta -= base_energy_pd;
 			if (cur_delta < best_delta) {
 				best_delta = cur_delta;
@@ -6868,7 +6883,6 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			}
 		}
 	}
-unlock:
 	rcu_read_unlock();
 
 	if (latency_sensitive)
@@ -6878,18 +6892,16 @@ unlock:
 	 * Pick the best CPU if prev_cpu cannot be used, or if it saves at
 	 * least 6% of the energy used by prev_cpu.
 	 */
-	if (prev_delta == ULONG_MAX)
-		return best_energy_cpu;
+	if ((prev_delta == ULONG_MAX) ||
+	    (prev_delta - best_delta) > ((prev_delta + base_energy) >> 4))
+		target = best_energy_cpu;
 
-	if ((prev_delta - best_delta) > ((prev_delta + base_energy) >> 4))
-		return best_energy_cpu;
+	return target;
 
-	return prev_cpu;
-
-fail:
+unlock:
 	rcu_read_unlock();
 
-	return -1;
+	return target;
 }
 
 /*
