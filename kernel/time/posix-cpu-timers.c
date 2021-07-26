@@ -1228,8 +1228,6 @@ void set_process_cpu_timer(struct task_struct *tsk, unsigned int clock_idx,
 			}
 		}
 
-		if (!*newval)
-			return;
 		*newval += now;
 	}
 
