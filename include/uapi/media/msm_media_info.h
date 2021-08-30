@@ -53,6 +53,7 @@ enum color_fmts {
 	 *          + max(Extradata, Y_Stride * 8), 4096)
 	 */
 	COLOR_FMT_NV12,
+
 	/* Venus NV21:
 	 * YUV 4:2:0 image with a plane of 8 bit Y samples followed
 	 * by an interleaved V/U plane containing 8 bit 2x2 subsampled
@@ -892,8 +893,11 @@ static inline unsigned int VENUS_Y_STRIDE(int color_fmt, int width)
 		stride = MSM_MEDIA_ALIGN(stride * 4/3, alignment);
 		break;
 	case COLOR_FMT_P010_UBWC:
-	case COLOR_FMT_P010:
 		alignment = 256;
+		stride = MSM_MEDIA_ALIGN(width * 2, alignment);
+		break;
+	case COLOR_FMT_P010:
+		alignment = 128;
 		stride = MSM_MEDIA_ALIGN(width*2, alignment);
 		break;
 	default:
@@ -935,8 +939,11 @@ static inline unsigned int VENUS_UV_STRIDE(int color_fmt, int width)
 		stride = MSM_MEDIA_ALIGN(stride * 4/3, alignment);
 		break;
 	case COLOR_FMT_P010_UBWC:
-	case COLOR_FMT_P010:
 		alignment = 256;
+		stride = MSM_MEDIA_ALIGN(width * 2, alignment);
+		break;
+	case COLOR_FMT_P010:
+		alignment = 128;
 		stride = MSM_MEDIA_ALIGN(width*2, alignment);
 		break;
 	default:
