@@ -12,9 +12,9 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/project_info.h>
-#include <linux/mm.h>
 #include <soc/qcom/smem.h>
 #include <linux/gpio.h>
+#include <linux/mm.h>
 #include <soc/qcom/socinfo.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
@@ -77,11 +77,11 @@ void save_dump_reason_to_smem(char *info, char *function_name)
         strl = strl <  DUMP_REASON_SIZE ? strl: DUMP_REASON_SIZE;
         strl1 = strl1 <  DUMP_REASON_SIZE ? strl1: DUMP_REASON_SIZE ;
         if ((strlen(dp_info->dump_reason) + strl) < DUMP_REASON_SIZE)
-                strncat(dp_info->dump_reason,info,strl + 1);
+                strncat(dp_info->dump_reason,info,strl);
 
         if (function_name != NULL && ((strlen(dp_info->dump_reason) + strl1) < DUMP_REASON_SIZE)) {
                 strncat(dp_info->dump_reason,function_name,strl1);
-                strncat(dp_info->dump_reason,"\n",2);
+                strncat(dp_info->dump_reason,"\n",1);
 	}
     }
     pr_err("\r%s: dump_reason : %s strl=%d function caused panic :%s strl1=%d \n", __func__,
@@ -475,7 +475,7 @@ void get_ddr_manufacture_name(void)
         for (i = 0; i < length; i++) {
             if (ddr_manufacture_list[i].id ==
                 project_info_desc->ddr_manufacture_info) {
-                snprintf(ddr_manufacture, BUF_SIZE, "%s",
+                snprintf(ddr_manufacture, sizeof(ddr_manufacture), "%s",
                     ddr_manufacture_list[i].name);
                 break;
             }
@@ -492,7 +492,7 @@ void get_cpu_type(void)
         for (i = 0; i < length; i++) {
             if (cpu_list_msm[i].id ==
                 project_info_desc->platform_id) {
-                snprintf(cpu_type, BUF_SIZE,
+                snprintf(cpu_type, sizeof(cpu_type),
                     "%s", cpu_list_msm[i].name);
                 break;
             }
