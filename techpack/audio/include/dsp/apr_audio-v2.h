@@ -974,9 +974,7 @@ struct adm_cmd_connect_afe_port_v5 {
 #define INT_FM_TX 0x3005
 #define RT_PROXY_PORT_001_RX	0x2000
 #define RT_PROXY_PORT_001_TX	0x2001
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 #define AFE_LOOPBACK_TX	0x6001
-//end add
 #define DISPLAY_PORT_RX	0x6020
 
 #define AFE_PORT_INVALID 0xFFFF
@@ -10159,7 +10157,7 @@ struct afe_clk_set {
 	 * for enable and disable clock.
 	 *	"clk_freq_in_hz", "clk_attri", and "clk_root"
 	 *	are ignored in disable clock case.
-	 *	@values 
+	 *	@valuesÂ 
 	 *	- 0 -- Disabled
 	 *	- 1 -- Enabled  @tablebulletend
 	 */

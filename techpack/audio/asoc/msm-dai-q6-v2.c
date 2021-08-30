@@ -2926,7 +2926,6 @@ static struct snd_soc_dai_driver msm_dai_q6_afe_rx_dai[] = {
 		.remove = msm_dai_q6_dai_remove,
 	},
 };
-//MM.Audio, 2019/07/13, add for screen record headset mic path
  static struct snd_soc_dai_driver msm_dai_q6_afe_lb_tx_dai[] = {
  	 {
  		 .capture = {
@@ -2950,7 +2949,6 @@ static struct snd_soc_dai_driver msm_dai_q6_afe_rx_dai[] = {
  		 .remove = msm_dai_q6_dai_remove,
  	 },
  };
-//end add
 static struct snd_soc_dai_driver msm_dai_q6_afe_tx_dai[] = {
 	{
 		.capture = {
@@ -5112,14 +5110,12 @@ register_slim_capture:
 			pr_err("%s: Device not found stream name %s\n",
 				__func__, stream_name);
 		break;
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 	case AFE_LOOPBACK_TX:
         rc = snd_soc_register_component(&pdev->dev,
 						&msm_dai_q6_component,
 						&msm_dai_q6_afe_lb_tx_dai[0],
 						1);
 		break;
-//end add
 	case INT_BT_SCO_RX:
 		rc = snd_soc_register_component(&pdev->dev,
 			&msm_dai_q6_component, &msm_dai_q6_bt_sco_rx_dai, 1);

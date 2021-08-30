@@ -33,7 +33,6 @@
 #include <dsp/audio_notifier.h>
 #include <dsp/q6afe-v2.h>
 #include <dsp/q6core.h>
-#include <linux/of_gpio.h>
 #include "msm-pcm-routing-v2.h"
 #include "codecs/msm-cdc-pinctrl.h"
 #include "codecs/wcd934x/wcd934x.h"
@@ -148,12 +147,10 @@ enum {
 	EXT_DISP_RX_IDX_MAX,
 };
 
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 enum {
 	AFE_LOOPBACK_TX_IDX = 0,
 	AFE_LOOPBACK_TX_IDX_MAX,
 };
-//end add
 
 struct msm_wsa881x_dev_info {
 	struct device_node *of_node;
@@ -420,11 +417,9 @@ static struct dev_config slim_tx_cfg[] = {
 	[SLIM_TX_8] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 2},
 };
 
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 static struct dev_config afe_loopback_tx_cfg[] = {
 	[AFE_LOOPBACK_TX_IDX] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
 };
-//end add
 
 /* Default configuration of external display BE */
 static struct dev_config ext_disp_rx_cfg[] = {
@@ -479,9 +474,7 @@ static struct dev_config aux_pcm_tx_cfg[] = {
 };
 
 static int msm_vi_feed_tx_ch = 2;
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 static const char *const afe_loopback_tx_ch_text[] = {"One", "Two"};
-//end add
 static const char *const slim_rx_ch_text[] = {"One", "Two"};
 static const char *const slim_tx_ch_text[] = {"One", "Two", "Three", "Four",
 						"Five", "Six", "Seven",
@@ -532,9 +525,7 @@ static const char *const mi2s_ch_text[] = {"One", "Two", "Three", "Four",
 					   "Eight"};
 static const char *const hifi_text[] = {"Off", "On"};
 static const char *const qos_text[] = {"Disable", "Enable"};
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 static SOC_ENUM_SINGLE_EXT_DECL(afe_loopback_tx_chs, afe_loopback_tx_ch_text);
-//end add
 
 static SOC_ENUM_SINGLE_EXT_DECL(slim_0_rx_chs, slim_rx_ch_text);
 static SOC_ENUM_SINGLE_EXT_DECL(slim_2_rx_chs, slim_rx_ch_text);
@@ -1008,7 +999,7 @@ static int slim_tx_bit_format_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-//MM.Audio, 2019/07/13, add for screen record headset mic path
+
 static int afe_loopback_tx_ch_get(struct snd_kcontrol *kcontrol,
  				struct snd_ctl_elem_value *ucontrol)
 {
@@ -1028,7 +1019,6 @@ static int afe_loopback_tx_ch_put(struct snd_kcontrol *kcontrol,
 
    return 1;
 }
-//end add
 
 static int msm_slim_rx_ch_get(struct snd_kcontrol *kcontrol,
 			      struct snd_ctl_elem_value *ucontrol)
@@ -2995,10 +2985,8 @@ static int msm_qos_ctl_put(struct snd_kcontrol *kcontrol,
 }
 
 static const struct snd_kcontrol_new msm_snd_controls[] = {
-//MM.Audio, 2019/07/13, add for screen record headset mic path
     SOC_ENUM_EXT("AFE_LOOPBACK_TX Channels", afe_loopback_tx_chs,
             afe_loopback_tx_ch_get, afe_loopback_tx_ch_put),
-//end add
 	SOC_ENUM_EXT("SLIM_0_RX Channels", slim_0_rx_chs,
 			msm_slim_rx_ch_get, msm_slim_rx_ch_put),
 	SOC_ENUM_EXT("SLIM_2_RX Channels", slim_2_rx_chs,
@@ -3468,14 +3456,12 @@ static int msm_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 		  params_rate(params));
 
 	switch (dai_link->id) {
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 	case MSM_BACKEND_DAI_AFE_LOOPBACK_TX:
  		param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
  				afe_loopback_tx_cfg[0].bit_format);
  		rate->min = rate->max = afe_loopback_tx_cfg[0].sample_rate;
  		channels->min = channels->max = afe_loopback_tx_cfg[0].channels;
  		break;
-//end add
 	case MSM_BACKEND_DAI_SLIMBUS_0_RX:
 	case MSM_BACKEND_DAI_SLIMBUS_1_RX:
 	case MSM_BACKEND_DAI_SLIMBUS_2_RX:
@@ -6815,7 +6801,6 @@ static struct snd_soc_dai_link msm_auxpcm_be_dai_links[] = {
 	},
 };
 
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 static struct snd_soc_dai_link msm_afe_rxtx_lb_be_dai_link[] = {
  	{
  		.name = LPASS_BE_AFE_LOOPBACK_TX,
@@ -6832,7 +6817,6 @@ static struct snd_soc_dai_link msm_afe_rxtx_lb_be_dai_link[] = {
  		.ignore_suspend = 1,
  	},
  };
-//end add
 
 static struct snd_soc_dai_link msm_tavil_snd_card_dai_links[
 			 ARRAY_SIZE(msm_common_dai_links) +
@@ -6843,10 +6827,8 @@ static struct snd_soc_dai_link msm_tavil_snd_card_dai_links[
 			 ARRAY_SIZE(msm_wcn_be_dai_links) +
 			 ARRAY_SIZE(ext_disp_be_dai_link) +
 			 ARRAY_SIZE(msm_mi2s_be_dai_links) +
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 			 ARRAY_SIZE(msm_auxpcm_be_dai_links) +
  			 ARRAY_SIZE(msm_afe_rxtx_lb_be_dai_link)];
-//end add
 
 static int msm_snd_card_tavil_late_probe(struct snd_soc_card *card)
 {
@@ -7229,9 +7211,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 	int len_1, len_2, len_3, len_4;
 	int total_links;
 	const struct of_device_id *match;
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 	uint32_t afe_loopback_intf = 0;
-//end add
 //suzhiguang,for config smartpa dailink.
     int ret;
     const char *smartpa_type;
@@ -7333,7 +7313,6 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
             }
         }
 #endif
-
 		if (of_property_read_bool(dev->of_node,
 					  "qcom,auxpcm-audio-intf")) {
 			memcpy(msm_tavil_snd_card_dai_links + total_links,
@@ -7341,8 +7320,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 			sizeof(msm_auxpcm_be_dai_links));
 			total_links += ARRAY_SIZE(msm_auxpcm_be_dai_links);
 		}
- //MM.Audio, 2019/07/13, add for screen record headset mic path
-                 ret = of_property_read_u32(dev->of_node,
+                ret = of_property_read_u32(dev->of_node,
                                  "qcom,afe-rxtx-lb",&afe_loopback_intf);
                  if (ret) {
                          dev_dbg(dev, "%s: No DT match AFE loopback audio interface\n",
@@ -7356,8 +7334,6 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
                                  ARRAY_SIZE(msm_afe_rxtx_lb_be_dai_link);
                          }
                  }
- //end add
-
 		dailink = msm_tavil_snd_card_dai_links;
 	} else if (!strcmp(match->data, "stub_codec")) {
 		card = &snd_soc_card_stub_msm;

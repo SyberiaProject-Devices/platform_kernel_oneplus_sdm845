@@ -691,7 +691,6 @@ int afe_get_port_type(u16 port_id)
 		break;
 
 	default:
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 /*		WARN_ON(1);
 		pr_err("%s: Invalid port id = 0x%x\n",
 			__func__, port_id);
@@ -701,7 +700,6 @@ int afe_get_port_type(u16 port_id)
 		else
 			ret = MSM_AFE_PORT_TYPE_RX;
 		break;
-//end
 	}
 
 	return ret;
@@ -3388,7 +3386,7 @@ static int q6afe_send_enc_config(u16 port_id,
 			__func__, port_id, ret);
 		goto exit;
 	}
-
+  
 	if (format == ASM_MEDIA_FMT_APTX) {
 		config.param.payload_size =
 			payload_size + sizeof(config.port.channel_mode_param);
@@ -3402,7 +3400,8 @@ static int q6afe_send_enc_config(u16 port_id,
 			pr_err("%s: CAPI_V2_PARAM_ID_APTX_ENC_SWITCH_TO_MONO for port 0x%x failed %d\n",
 				__func__, port_id, ret);
 		}
-       }
+        }
+
 	if (format == ASM_MEDIA_FMT_LDAC &&
 		cfg->ldac_config.abr_config.is_abr_enabled) {
 		config.param.payload_size =
@@ -4183,11 +4182,9 @@ int afe_get_port_index(u16 port_id)
 		return IDX_AFE_PORT_ID_INT6_MI2S_RX;
 	case AFE_PORT_ID_INT6_MI2S_TX:
 		return IDX_AFE_PORT_ID_INT6_MI2S_TX;
-//MM.Audio, 2019/07/13, add for screen record headset mic path
 	case AFE_LOOPBACK_TX:
  		return IDX_AFE_LOOPBACK_TX;
-//end add
-	default:
+ 	default:
 		pr_err("%s: port 0x%x\n", __func__, port_id);
 		return -EINVAL;
 	}
