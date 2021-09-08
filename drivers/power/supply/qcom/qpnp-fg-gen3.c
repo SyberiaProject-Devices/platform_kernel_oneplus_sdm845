@@ -1264,8 +1264,11 @@ static int fg_delta_bsoc_irq_en_cb(struct votable *votable, void *data,
 
 	if (enable) {
 		enable_irq(chip->irqs[BSOC_DELTA_IRQ].irq);
+		if (chip->irqs[BSOC_DELTA_IRQ].wakeable)
+			enable_irq_wake(chip->irqs[BSOC_DELTA_IRQ].irq);
 	} else {
-		disable_irq_wake(chip->irqs[BSOC_DELTA_IRQ].irq);
+		if (chip->irqs[BSOC_DELTA_IRQ].wakeable)
+			disable_irq_wake(chip->irqs[BSOC_DELTA_IRQ].irq);
 		disable_irq_nosync(chip->irqs[BSOC_DELTA_IRQ].irq);
 	}
 
@@ -4194,6 +4197,9 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
 		rc = fg_get_time_to_full(chip, &pval->intval);
 		break;
+	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW:
+		rc = fg_get_time_to_full(chip, &pval->intval);
+		break;
 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
 		rc = fg_get_time_to_empty(chip, &pval->intval);
 		break;
@@ -4455,16 +4461,17 @@ static enum power_supply_property fg_psy_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_COUNTER_SHADOW,
 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
+	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_SOC_REPORTING_READY,
 	POWER_SUPPLY_PROP_DEBUG_BATTERY,
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
 	POWER_SUPPLY_PROP_CC_STEP,
 	POWER_SUPPLY_PROP_CC_STEP_SEL,
+	POWER_SUPPLY_PROP_REAL_CAPACITY,
+	POWER_SUPPLY_PROP_BATTERY_HEALTH,
 /* david.liu@bsp, 20171023 Battery & Charging porting */
 	POWER_SUPPLY_PROP_SET_ALLOW_READ_EXTERN_FG_IIC,
 	POWER_SUPPLY_PROP_BQ_SOC,
-	POWER_SUPPLY_PROP_REAL_CAPACITY,
-	POWER_SUPPLY_PROP_BATTERY_HEALTH,
 	POWER_SUPPLY_PROP_REMAINING_CAPACITY,
 };
 
@@ -6089,7 +6096,7 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	device_init_wakeup(chip->dev, true);
 	schedule_delayed_work(&chip->profile_load_work, 0);
 
-	pr_info("yfb FG GEN3 driver probed successfully\n");
+	pr_info("FG GEN3 driver probed successfully\n");
 	return 0;
 exit:
 	fg_cleanup(chip);

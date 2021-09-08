@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -45,12 +45,9 @@
 #define SCM_WDOG_DEBUG_BOOT_PART	0x9
 #define SCM_DLOAD_FULLDUMP		0X10
 #define SCM_EDLOAD_MODE			0X01
-#define SCM_EDLOAD_PCI_MODE		0X04
 #define SCM_DLOAD_CMD			0x10
 #define SCM_DLOAD_MINIDUMP		0X20
 #define SCM_DLOAD_BOTHDUMPS	(SCM_DLOAD_MINIDUMP | SCM_DLOAD_FULLDUMP)
-
-#define BOOT_CONFIG_SHIFT		3
 
 static int restart_mode;
 static void *restart_reason;
@@ -58,13 +55,10 @@ static bool scm_pmic_arbiter_disable_supported;
 static bool scm_deassert_ps_hold_supported;
 /* Download mode master kill-switch */
 static void __iomem *msm_ps_hold;
-static void __iomem *boot_config;
 static phys_addr_t tcsr_boot_misc_detect;
 static void scm_disable_sdi(void);
 static bool force_warm_reboot;
-static bool early_pcie_init_enable;
 
-static int in_panic;
 #ifdef CONFIG_QCOM_DLOAD_MODE
 /* Runtime could be only changed value once.
  * There is no API from TZ to re-enable the registers.
@@ -82,6 +76,7 @@ static const int download_mode;
 #define KASLR_OFFSET_PROP "qcom,msm-imem-kaslr_offset"
 #endif
 
+static int in_panic;
 static int dload_type = SCM_DLOAD_FULLDUMP;
 static void *dload_mode_addr;
 static bool dload_mode_enabled;
@@ -111,11 +106,16 @@ struct reset_attribute {
 module_param_call(download_mode, dload_set, param_get_int,
 			&download_mode, 0644);
 
-int oem_get_download_mode(void)
+static int panic_prep_restart(struct notifier_block *this,
+			      unsigned long event, void *ptr)
 {
-	return download_mode && (dload_type & SCM_DLOAD_FULLDUMP);
+	in_panic = 1;
+	return NOTIFY_DONE;
 }
 
+static struct notifier_block panic_blk = {
+	.notifier_call	= panic_prep_restart,
+};
 
 static int scm_set_dload_mode(int arg1, int arg2)
 {
@@ -143,8 +143,6 @@ static int scm_set_dload_mode(int arg1, int arg2)
 static void set_dload_mode(int on)
 {
 	int ret;
-
-	pr_info("set_dload_mode %s\n", on ? "ON" : "OFF");
 
 	if (dload_mode_addr) {
 		__raw_writel(on ? 0xE47B337D : 0, dload_mode_addr);
@@ -188,10 +186,7 @@ static void enable_emergency_dload_mode(void)
 		mb();
 	}
 
-	if (early_pcie_init_enable)
-		ret = scm_set_dload_mode(SCM_EDLOAD_PCI_MODE, 0);
-	else
-		ret = scm_set_dload_mode(SCM_EDLOAD_MODE, 0);
+	ret = scm_set_dload_mode(SCM_EDLOAD_MODE, 0);
 	if (ret)
 		pr_err("Failed to set secure EDLOAD mode: %d\n", ret);
 }
@@ -233,17 +228,6 @@ static bool get_dload_mode(void)
 	return false;
 }
 #endif
-
-static int panic_prep_restart(struct notifier_block *this,
-			      unsigned long event, void *ptr)
-{
-	in_panic = 1;
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block panic_blk = {
-	.notifier_call	= panic_prep_restart,
-};
 
 static void scm_disable_sdi(void)
 {
@@ -304,40 +288,32 @@ static void msm_restart_prepare(const char *cmd)
 	 * Kill download mode if master-kill switch is set
 	 */
 
-	set_dload_mode(false);
+	set_dload_mode(download_mode &&
+			(in_panic || restart_mode == RESTART_DLOAD));
 #endif
 
-	if (in_panic)
+	if (qpnp_pon_check_hard_reset_stored()) {
+		/* Set warm reset as true when device is in dload mode */
+		if (get_dload_mode() ||
+			((cmd != NULL && cmd[0] != '\0') &&
+			!strcmp(cmd, "edl")))
+			need_warm_reset = true;
+	} else {
+		need_warm_reset = (get_dload_mode() ||
+				(cmd != NULL && cmd[0] != '\0'));
+	}
+
+	if (force_warm_reboot)
+		pr_info("Forcing a warm reset of the system\n");
+
+	/* Hard reset the PMIC unless memory contents must be maintained. */
+	if (force_warm_reboot || need_warm_reset)
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_WARM_RESET);
 	else
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_HARD_RESET);
 
 	if (cmd != NULL) {
-		if (!strncmp(cmd, "rf", 2)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_RF);
-			__raw_writel(RF_MODE, restart_reason);
-		} else if (!strncmp(cmd, "wlan", 4)){
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_WLAN);
-			__raw_writel(WLAN_MODE, restart_reason);
-		} else if (!strncmp(cmd, "mos", 3)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_MOS);
-			__raw_writel(MOS_MODE, restart_reason);
-		} else if (!strncmp(cmd, "ftm", 3)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_FACTORY);
-			__raw_writel(FACTORY_MODE, restart_reason);
-		} else if (!strncmp(cmd, "kernel", 6)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_KERNEL);
-			__raw_writel(KERNEL_MODE, restart_reason);
-		} else if (!strncmp(cmd, "modem", 5)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_MODEM);
-			__raw_writel(MODEM_MODE, restart_reason);
-		} else if (!strncmp(cmd, "android", 7)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_ANDROID);
-			__raw_writel(ANDROID_MODE, restart_reason);
-		} else if (!strncmp(cmd, "aging", 5)) {
-			qpnp_pon_set_restart_reason(PON_RESTART_REASON_AGING);
-			__raw_writel(AGING_MODE, restart_reason);
-		} else if (!strncmp(cmd, "bootloader", 10)) {
+		if (!strncmp(cmd, "bootloader", 10)) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_BOOTLOADER);
 			__raw_writel(0x77665500, restart_reason);
@@ -602,15 +578,13 @@ static int msm_restart_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct resource *mem;
 	struct device_node *np;
-	uint32_t read_val;
 	int ret = 0;
-
-	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 
 #ifdef CONFIG_QCOM_DLOAD_MODE
 	if (scm_is_call_available(SCM_SVC_BOOT, SCM_DLOAD_CMD) > 0)
 		scm_dload_supported = true;
 
+	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 	np = of_find_compatible_node(NULL, NULL, DL_MODE_PROP);
 	if (!np) {
 		pr_err("unable to find DT imem DLOAD mode node\n");
@@ -700,22 +674,6 @@ skip_sysfs_create:
 					   "tcsr-boot-misc-detect");
 	if (mem)
 		tcsr_boot_misc_detect = mem->start;
-
-
-	early_pcie_init_enable = 0;
-	mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "boot-config");
-	if (mem) {
-		boot_config = devm_ioremap_resource(dev, mem);
-		if (IS_ERR(boot_config)) {
-			pr_err("unable to ioremap boot config offset\n");
-			return PTR_ERR(boot_config);
-		}
-
-		read_val = __raw_readl(boot_config);
-
-		/* Bit 3 of the BOOT_CONFIG is used as the PCIe_EARLY_INIT_EN */
-		early_pcie_init_enable = (read_val >> BOOT_CONFIG_SHIFT) & 1;
-	}
 
 	pm_power_off = do_msm_poweroff;
 	arm_pm_restart = do_msm_restart;

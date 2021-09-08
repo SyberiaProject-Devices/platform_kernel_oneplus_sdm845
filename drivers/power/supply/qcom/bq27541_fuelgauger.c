@@ -93,9 +93,9 @@
 #define BQ27411_REG_AI                  0x10
 #define BQ27411_REG_SOC                 0x1c
 #define BQ27411_REG_HEALTH              0x20
+#define BQ27411_REG_FCC                 0xE
 #define BQ27411_REG_OVER_TEMP           0x40
 #define BQ27411_REG_GET_OVER_TEMP_EN    0x0002
-#define BQ27411_REG_FCC                 0xE
 
 #define CONTROL_CMD                 0x00
 #define CONTROL_STATUS              0x00
@@ -233,8 +233,6 @@ struct bq27541_device_info {
 	int soc_pre;
 	int  batt_vol_pre;
 	int current_pre;
-	int cap_pre;
-	int remain_pre;
 	int health_pre;
 	int get_over_temp;
 	unsigned long rtc_resume_time;
@@ -252,6 +250,7 @@ struct bq27541_device_info {
 	bool disable_calib_soc;
 	unsigned long	lcd_off_time;
 	unsigned long	soc_pre_time;
+	/* david.liu@oneplus.tw, 2016/05/16  Fix capacity won't udate */
 	unsigned long	soc_store_time;
 #ifdef CONFIG_GAUGE_BQ27411
 	/* david.liu@bsp, 20161004 Add BQ27411 support */
@@ -265,11 +264,7 @@ struct bq27541_device_info {
 };
 
 /*add by yangrujin@bsp 2016/3/16, reduce bq resume time*/
-
 #include <linux/workqueue.h>
-/* add to update fg node value on panel event */
-int panel_flag1;
-int panel_flag2;
 
 struct update_pre_capacity_data {
 	struct delayed_work work;
@@ -901,11 +896,7 @@ static int bq27541_remaining_capacity(struct bq27541_device_info *di)
 	int ret;
 	int cap = 0;
 
-	/* Add for get right soc when sleep long time */
-	if (atomic_read(&di->suspended) == 1)
-		return di->remain_pre;
-
-	if (di->allow_reading || panel_flag1) {
+	if (di->allow_reading) {
 #ifdef CONFIG_GAUGE_BQ27411
 		/* david.liu@bsp, 20161004 Add BQ27411 support */
 		ret = bq27541_read(di->cmd_addr.reg_rm,
@@ -917,13 +908,8 @@ static int bq27541_remaining_capacity(struct bq27541_device_info *di)
 			pr_err("error reading capacity.\n");
 			return ret;
 		}
-		if (panel_flag1)
-			panel_flag1 = 0;
-	} else {
-		return di->remain_pre;
 	}
 
-	di->remain_pre = cap;
 	return cap;
 }
 
@@ -932,11 +918,7 @@ static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
 	int ret;
 	int cap = 0;
 
-	/* Add for get right soc when sleep long time */
-	if (atomic_read(&di->suspended) == 1)
-		return di->cap_pre;
-
-	if (di->allow_reading || panel_flag2) {
+	if (di->allow_reading) {
 #ifdef CONFIG_GAUGE_BQ27411
 		/* david.liu@bsp, 20161004 Add BQ27411 support */
 		ret = bq27541_read(BQ27411_REG_FCC,
@@ -948,13 +930,8 @@ static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
 			pr_err("error reading full chg capacity.\n");
 			return ret;
 		}
-		if (panel_flag2)
-			panel_flag2 = 0;
-	} else {
-		return di->cap_pre;
 	}
 
-	di->cap_pre = cap;
 	return cap;
 }
 
@@ -1260,6 +1237,7 @@ static void update_battery_soc_work(struct work_struct *work)
 	bq27541_get_batt_remaining_capacity();
 	pr_debug("battery remain capacity:%d\n",
 				bq27541_get_batt_health());
+	bq27541_get_batt_full_chg_capacity();
 	bq27541_set_allow_reading(false);
 	bq27541_temperature_thrshold_update(temp);
 	if (!bq27541_di->already_modify_smooth)
@@ -1564,6 +1542,8 @@ static void update_pre_capacity_func(struct work_struct *w)
 	bq27541_set_allow_reading(true);
 	bq27541_get_battery_temperature();
 	bq27541_battery_soc(bq27541_di, update_pre_capacity_data.suspend_time);
+	bq27541_get_batt_remaining_capacity();
+	bq27541_get_batt_full_chg_capacity();
 	bq27541_set_allow_reading(false);
 	__pm_relax(&bq27541_di->update_soc_wake_lock);
 	pr_info("exit\n");
