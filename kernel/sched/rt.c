@@ -4,6 +4,7 @@
  * policies)
  */
 #include "sched.h"
+
 #include "pelt.h"
 
 int sched_rr_timeslice = RR_TIMESLICE;
@@ -437,6 +438,45 @@ static inline int on_rt_rq(struct sched_rt_entity *rt_se)
 {
 	return rt_se->on_rq;
 }
+
+#ifdef CONFIG_UCLAMP_TASK
+/*
+ * Verify the fitness of task @p to run on @cpu taking into account the uclamp
+ * settings.
+ *
+ * This check is only important for heterogeneous systems where uclamp_min value
+ * is higher than the capacity of a @cpu. For non-heterogeneous system this
+ * function will always return true.
+ *
+ * The function will return true if the capacity of the @cpu is >= the
+ * uclamp_min and false otherwise.
+ *
+ * Note that uclamp_min will be clamped to uclamp_max if uclamp_min
+ * > uclamp_max.
+ */
+static inline bool rt_task_fits_capacity(struct task_struct *p, int cpu)
+{
+	unsigned int min_cap;
+	unsigned int max_cap;
+	unsigned int cpu_cap;
+
+	/* Only heterogeneous systems can benefit from this check */
+	if (!static_branch_unlikely(&sched_asym_cpucapacity))
+		return true;
+
+	min_cap = uclamp_eff_value(p, UCLAMP_MIN);
+	max_cap = uclamp_eff_value(p, UCLAMP_MAX);
+
+	cpu_cap = capacity_orig_of(cpu);
+
+	return cpu_cap >= min(min_cap, max_cap);
+}
+#else
+static inline bool rt_task_fits_capacity(struct task_struct *p, int cpu)
+{
+	return true;
+}
+#endif
 
 #ifdef CONFIG_RT_GROUP_SCHED
 
@@ -1407,45 +1447,6 @@ static void yield_task_rt(struct rq *rq)
 	requeue_task_rt(rq, rq->curr, 0);
 }
 
-#ifdef CONFIG_UCLAMP_TASK
-/*
- * Verify the fitness of task @p to run on @cpu taking into account the uclamp
- * settings.
- *
- * This check is only important for heterogeneous systems where uclamp_min value
- * is higher than the capacity of a @cpu. For non-heterogeneous system this
- * function will always return true.
- *
- * The function will return true if the capacity of the @cpu is >= the
- * uclamp_min and false otherwise.
- *
- * Note that uclamp_min will be clamped to uclamp_max if uclamp_min
- * > uclamp_max.
- */
-static inline bool rt_task_fits_capacity(struct task_struct *p, int cpu)
-{
-	unsigned int min_cap;
-	unsigned int max_cap;
-	unsigned int cpu_cap;
-
-	/* Only heterogeneous systems can benefit from this check */
-	if (!static_branch_unlikely(&sched_asym_cpucapacity))
-		return true;
-
-	min_cap = uclamp_eff_value(p, UCLAMP_MIN);
-	max_cap = uclamp_eff_value(p, UCLAMP_MAX);
-
-	cpu_cap = capacity_orig_of(cpu);
-
-	return cpu_cap >= min(min_cap, max_cap);
-}
-#else
-static inline bool rt_task_fits_capacity(struct task_struct *p, int cpu)
-{
-	return true;
-}
-#endif
-
 #ifdef CONFIG_SMP
 static int find_lowest_rq(struct task_struct *task);
 
@@ -1453,10 +1454,8 @@ static int find_lowest_rq(struct task_struct *task);
 /*
  * Return whether the task on the given cpu is currently non-preemptible
  * while handling a potentially long softint, or if the task is likely
- * to block preemptions soon because (a) it is a ksoftirq thread that is
- * handling slow softints, (b) it is idle and therefore likely to start
- * processing the irq's immediately, (c) the cpu is currently handling
- * hard irq's and will soon move on to the softirq handler.
+ * to block preemptions soon because it is a ksoftirq thread that is
+ * handling slow softints.
  */
 bool
 task_may_not_preempt(struct task_struct *task, int cpu)
@@ -1466,20 +1465,18 @@ task_may_not_preempt(struct task_struct *task, int cpu)
 
 	struct task_struct *cpu_ksoftirqd = per_cpu(ksoftirqd, cpu);
 	return ((softirqs & LONG_SOFTIRQ_MASK) &&
-		(task == cpu_ksoftirqd || is_idle_task(task) ||
-		 (task_thread_info(task)->preempt_count
-			& (HARDIRQ_MASK | SOFTIRQ_MASK))));
+		(task == cpu_ksoftirqd ||
+		 task_thread_info(task)->preempt_count & SOFTIRQ_MASK));
 }
 #endif /* CONFIG_RT_SOFTINT_OPTIMIZATION */
 
 static int
 select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 {
-	struct task_struct *curr, *tgt_task;
+	struct task_struct *curr;
 	struct rq *rq;
 	struct rq *this_cpu_rq;
 	bool test;
-	int target_cpu = -1;
 	bool may_not_preempt;
 	bool sync = !!(flags & WF_SYNC);
 	int this_cpu;
@@ -1521,6 +1518,10 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	 *
 	 * This test is optimistic, if we get it wrong the load-balancer
 	 * will have to sort it out.
+	 *
+	 * We take into account the capacity of the CPU to ensure it fits the
+	 * requirement of the task - which is only important on heterogeneous
+	 * systems like big.LITTLE.
 	 */
 	may_not_preempt = task_may_not_preempt(curr, cpu);
 	test = (curr && (may_not_preempt ||
@@ -1538,18 +1539,6 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 
 	if (test || !rt_task_fits_capacity(p, cpu)) {
 		int target = find_lowest_rq(p);
-
-
-		/*
-		 * Check once for losing a race with the other core's irq
-		 * handler. This does not happen frequently, but it can avoid
-		 * delaying the execution of the RT task in those cases.
-		 */
-		if (target != -1) {
-			tgt_task = READ_ONCE(cpu_rq(target)->curr);
-			if (task_may_not_preempt(tgt_task, target))
-				target = find_lowest_rq(p);
-		}
 
 		/*
 		 * Bail out if we were forcing a migration to find a better
@@ -1607,6 +1596,7 @@ static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
 static int balance_rt(struct rq *rq, struct task_struct *p, struct rq_flags *rf)
 {
 	if (!on_rt_rq(&p->rt) && need_pull_rt_task(rq, p)) {
+
 		/*
 		 * This is OK, because current is on_cpu, which avoids it being
 		 * picked for load-balance and preemption/IRQs are still
@@ -1769,7 +1759,7 @@ static int find_lowest_rq(struct task_struct *task)
 	struct sched_domain *sd;
 	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
 	int this_cpu = smp_processor_id();
-	int cpu      = task_cpu(task);
+	int cpu      = -1;
 	int ret;
 
 	/* Make sure the mask is initialized first */
@@ -1796,6 +1786,8 @@ static int find_lowest_rq(struct task_struct *task)
 
 	if (!ret)
 		return -1; /* No targets found */
+
+	cpu = task_cpu(task);
 
 	/*
 	 * At this point we have built a mask of CPUs representing the
@@ -2369,20 +2361,13 @@ void __init init_sched_rt_class(void)
 static void switched_to_rt(struct rq *rq, struct task_struct *p)
 {
 	/*
-	 * If we are running, update the avg_rt tracking, as the running time
-	 * will now on be accounted into the latter.
-	 */
-	if (task_current(rq, p)) {
-		update_rt_rq_load_avg(rq_clock_pelt(rq), rq, 0);
-		return;
-	}
-
-	/*
-	 * If we are not running we may need to preempt the current
-	 * running task. If that current running task is also an RT task
+	 * If we are already running, then there's nothing
+	 * that needs to be done. But if we are not running
+	 * we may need to preempt the current running task.
+	 * If that current running task is also an RT task
 	 * then see if we can move to another run queue.
 	 */
-	if (task_on_rq_queued(p)) {
+	if (task_on_rq_queued(p) && rq->curr != p) {
 #ifdef CONFIG_SMP
 		if (p->nr_cpus_allowed > 1 && rq->rt.overloaded)
 			rt_queue_push_tasks(rq);
@@ -2402,7 +2387,7 @@ prio_changed_rt(struct rq *rq, struct task_struct *p, int oldprio)
 	if (!task_on_rq_queued(p))
 		return;
 
-	if (task_current(rq, p)) {
+	if (rq->curr == p) {
 #ifdef CONFIG_SMP
 		/*
 		 * If our priority decreases while running, we
@@ -2566,7 +2551,7 @@ static inline int tg_has_rt_tasks(struct task_group *tg)
 	if (task_group_is_autogroup(tg))
 		return 0;
 
-	css_task_iter_start(&tg->css, &it);
+	css_task_iter_start(&tg->css, 0, &it);
 	while (!ret && (task = css_task_iter_next(&it)))
 		ret |= rt_task(task);
 	css_task_iter_end(&it);
