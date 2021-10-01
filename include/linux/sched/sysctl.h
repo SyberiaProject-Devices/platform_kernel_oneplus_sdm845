@@ -110,6 +110,13 @@ extern int sysctl_sched_uclamp_handler(struct ctl_table *table, int write,
 				       loff_t *ppos);
 #endif
 
+#ifdef CONFIG_SMP
+extern unsigned int sysctl_sched_pelt_multiplier;
+
+int sched_pelt_multiplier(struct ctl_table *table, int write, void *buffer,
+		size_t *lenp, loff_t *ppos);
+#endif
+
 extern int sysctl_numa_balancing(struct ctl_table *table, int write,
 				 void __user *buffer, size_t *lenp,
 				 loff_t *ppos);
