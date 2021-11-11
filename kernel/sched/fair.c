@@ -11650,6 +11650,27 @@ __init void init_sched_fair_class(void)
 #define DEF_UTIL_THRESHOLD  1280
 #define DEF_UTIL_POST_INIT_SCALE  512
 
+#ifdef CONFIG_SMP
+int sched_cpu_idle(int cpu)
+{
+	return sched_idle_rq(cpu_rq(cpu));
+}
+#endif
+
+/**
+ * cpu_is_idle - is a given CPU idle for enqueuing work.
+ * @cpu: the CPU in question.
+ *
+ * Return: 1 if the CPU is currently idle. 0 otherwise.
+ */
+int cpu_is_idle(int cpu)
+{
+	if (available_idle_cpu(cpu) || sched_cpu_idle(cpu))
+		return 1;
+
+	return 0;
+}
+
 unsigned int sched_capacity_margin[CPU_NUM] = {
 			[0 ... CPU_NUM-1] = DEF_UTIL_THRESHOLD};
 static unsigned long scale_freq[CPU_NUM] = {
