@@ -6738,13 +6738,9 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * is already enough to scale the EM reported power
 		 * consumption at the (eventually clamped) cpu_capacity.
 		 */
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPIXEL
-		cpu_util = schedutil_cpu_util_pixel_mod(cpu, util_running, cpu_cap,
-					       ENERGY_UTIL, NULL);
-#else
 		cpu_util = effective_cpu_util(cpu, util_running, cpu_cap,
 					      ENERGY_UTIL, NULL);
-#endif
+
 		sum_util += min(cpu_util, _cpu_cap);
 
 		/*
@@ -6754,13 +6750,8 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * NOTE: in case RT tasks are running, by default the
 		 * FREQUENCY_UTIL's utilization can be max OPP.
 		 */
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPIXEL
-		cpu_util = schedutil_cpu_util_pixel_mod(cpu, util_freq, cpu_cap,
-					      FREQUENCY_UTIL, tsk);
-#else
 		cpu_util = effective_cpu_util(cpu, util_freq, cpu_cap,
 					      FREQUENCY_UTIL, tsk);
-#endif
 		max_util = max(max_util, min(cpu_util, _cpu_cap));
 	}
 
@@ -11642,64 +11633,3 @@ __init void init_sched_fair_class(void)
 #endif /* SMP */
 
 }
-
-#define MIN_CAPACITY_CPU    0
-#define MID_CAPACITY_CPU    4
-#define MAX_CAPACITY_CPU    7
-#define HIGH_CAPACITY_CPU   4
-#define CPU_NUM             8
-#define CLUSTER_NUM         3
-#define UCLAMP_STATS_SLOTS  21
-#define UCLAMP_STATS_STEP   (100 / (UCLAMP_STATS_SLOTS - 1))
-#define DEF_UTIL_THRESHOLD  1280
-#define DEF_UTIL_POST_INIT_SCALE  512
-
-unsigned int sched_capacity_margin[CPU_NUM] = {
-			[0 ... CPU_NUM-1] = DEF_UTIL_THRESHOLD};
-static unsigned long scale_freq[CPU_NUM] = {
-			[0 ... CPU_NUM-1] = SCHED_CAPACITY_SCALE };
-
-unsigned long map_util_freq_pixel_mod(unsigned long util, unsigned long freq,
-				      unsigned long cap, int cpu)
-{
-	return (freq * sched_capacity_margin[cpu] >> SCHED_CAPACITY_SHIFT) * util / cap;
-}
-
-#if defined(CONFIG_UCLAMP_TASK) && defined(CONFIG_FAIR_GROUP_SCHED)
-static inline unsigned long cpu_util_cfs_group_mod_no_est(struct rq *rq)
-{
-	struct cfs_rq *cfs_rq, *pos;
-	unsigned long util = 0, unclamped_util = 0;
-	struct task_group *tg;
-	unsigned long scale_cpu = arch_scale_cpu_capacity(NULL, rq->cpu);
-
-	// cpu_util_cfs = root_util - subgroup_util_sum + throttled_subgroup_util_sum
-	for_each_leaf_cfs_rq_safe(rq, cfs_rq, pos) {
-		if (&rq->cfs != cfs_rq) {
-			tg = cfs_rq->tg;
-			unclamped_util += cfs_rq->avg.util_avg;
-			util += min_t(unsigned long, READ_ONCE(cfs_rq->avg.util_avg), 0);
-		}
-	}
-
-	util += max_t(int, READ_ONCE(rq->cfs.avg.util_avg) - unclamped_util, 0);
-
-	return util;
-}
-
-unsigned long cpu_util_cfs_group_mod(struct rq *rq)
-{
-	unsigned long util = cpu_util_cfs_group_mod_no_est(rq);
-
-	if (sched_feat(UTIL_EST)) {
-		// TODO: right now the limit of util_est is per task
-		// consider to make it per group.
-		util = max_t(unsigned long, util,
-			     READ_ONCE(rq->cfs.avg.util_est.enqueued));
-	}
-
-	return util;
-}
-#else
-#define cpu_util_cfs_group_mod cpu_util_cfs
-#endif

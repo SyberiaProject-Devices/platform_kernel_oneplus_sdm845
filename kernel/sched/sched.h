@@ -2206,13 +2206,6 @@ unsigned long effective_cpu_util(int cpu, unsigned long util_cfs,
 				 unsigned long max, enum cpu_util_type type,
 				 struct task_struct *p);
 
-unsigned long schedutil_cpu_util_pixel_mod(int cpu, unsigned long util_cfs,
-		 unsigned long max, enum cpu_util_type type,
-		 struct task_struct *p);
-
-unsigned long map_util_freq_pixel_mod(unsigned long util, unsigned long freq,
-				      unsigned long cap, int cpu);
-
 static inline unsigned long cpu_bw_dl(struct rq *rq)
 {
     return (rq->dl.running_bw * SCHED_CAPACITY_SCALE) >> BW_SHIFT;
