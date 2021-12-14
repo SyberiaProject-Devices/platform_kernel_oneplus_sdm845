@@ -11,7 +11,6 @@
 
 #include <linux/cpu.h>
 #include <linux/cpumask.h>
-#include <linux/debugfs.h>
 #include <linux/energy_model.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
@@ -26,83 +25,6 @@ static bool _is_cpu_device(struct device *dev)
 {
 	return (dev->bus == &cpu_subsys);
 }
-
-#ifdef CONFIG_DEBUG_FS
-static struct dentry *rootdir;
-
-static void em_debug_create_ps(struct em_perf_state *ps, struct dentry *pd)
-{
-	struct dentry *d;
-	char name[24];
-
-	snprintf(name, sizeof(name), "ps:%lu", ps->frequency);
-
-	/* Create per-ps directory */
-	d = debugfs_create_dir(name, pd);
-	debugfs_create_ulong("frequency", 0444, d, &ps->frequency);
-	debugfs_create_ulong("power", 0444, d, &ps->power);
-	debugfs_create_ulong("cost", 0444, d, &ps->cost);
-}
-
-static int em_debug_cpus_show(struct seq_file *s, void *unused)
-{
-	seq_printf(s, "%*pbl\n", cpumask_pr_args(to_cpumask(s->private)));
-
-	return 0;
-}
-DEFINE_SHOW_ATTRIBUTE(em_debug_cpus);
-
-static int em_debug_units_show(struct seq_file *s, void *unused)
-{
-	struct em_perf_domain *pd = s->private;
-	char *units = pd->milliwatts ? "milliWatts" : "bogoWatts";
-
-	seq_printf(s, "%s\n", units);
-
-	return 0;
-}
-DEFINE_SHOW_ATTRIBUTE(em_debug_units);
-
-static void em_debug_create_pd(struct device *dev)
-{
-	struct dentry *d;
-	int i;
-
-	/* Create the directory of the performance domain */
-	d = debugfs_create_dir(dev_name(dev), rootdir);
-
-	if (_is_cpu_device(dev))
-		debugfs_create_file("cpus", 0444, d, dev->em_pd->cpus,
-				    &em_debug_cpus_fops);
-
-	debugfs_create_file("units", 0444, d, dev->em_pd, &em_debug_units_fops);
-
-	/* Create a sub-directory for each performance state */
-	for (i = 0; i < dev->em_pd->nr_perf_states; i++)
-		em_debug_create_ps(&dev->em_pd->table[i], d);
-
-}
-
-static void em_debug_remove_pd(struct device *dev)
-{
-	struct dentry *debug_dir;
-
-	debug_dir = debugfs_lookup(dev_name(dev), rootdir);
-	debugfs_remove_recursive(debug_dir);
-}
-
-static int __init em_debug_init(void)
-{
-	/* Create /sys/kernel/debug/energy_model directory */
-	rootdir = debugfs_create_dir("energy_model", NULL);
-
-	return 0;
-}
-fs_initcall(em_debug_init);
-#else /* CONFIG_DEBUG_FS */
-static void em_debug_create_pd(struct device *dev) {}
-static void em_debug_remove_pd(struct device *dev) {}
-#endif
 
 static int em_create_perf_table(struct device *dev, struct em_perf_domain *pd,
 				int nr_states, struct em_data_callback *cb)
@@ -337,7 +259,6 @@ int em_dev_register_perf_domain(struct device *dev, unsigned int nr_states,
 
 	dev->em_pd->milliwatts = milliwatts;
 
-	em_debug_create_pd(dev);
 	dev_info(dev, "EM: created perf domain\n");
 
 unlock:
@@ -366,7 +287,6 @@ void em_dev_unregister_perf_domain(struct device *dev)
 	 * The debugfs directory name is the same as device's name.
 	 */
 	mutex_lock(&em_pd_mutex);
-	em_debug_remove_pd(dev);
 
 	kfree(dev->em_pd->table);
 	kfree(dev->em_pd);
