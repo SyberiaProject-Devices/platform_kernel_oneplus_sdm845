@@ -6,8 +6,10 @@
 #include <linux/kobject.h>
 #include <linux/rcupdate.h>
 #include <linux/sched/cpufreq.h>
+#include <linux/sched.h>
 #include <linux/types.h>
 
+#ifdef CONFIG_ENERGY_MODEL
 /**
  * em_cap_state - Capacity state of a performance domain
  * @frequency:	The CPU frequency in KHz, for consistency with CPUFreq
@@ -25,7 +27,6 @@ struct em_cap_state {
  * em_perf_domain - Performance domain
  * @table:		List of capacity states, in ascending order
  * @nr_cap_states:	Number of capacity states
- * @kobj:		Kobject used to expose the domain in sysfs
  * @cpus:		Cpumask covering the CPUs of the domain
  *
  * A "performance domain" represents a group of CPUs whose performance is
@@ -36,28 +37,10 @@ struct em_cap_state {
 struct em_perf_domain {
 	struct em_cap_state *table;
 	int nr_cap_states;
-	struct kobject kobj;
 	unsigned long cpus[0];
 };
 
-#ifdef CONFIG_ENERGY_MODEL
 #define EM_CPU_MAX_POWER 0xFFFF
-
-/*
- * Increase resolution of energy estimation calculations for 64-bit
- * architectures. The extra resolution improves decision made by EAS for the
- * task placement when two Performance Domains might provide similar energy
- * estimation values (w/o better resolution the values could be equal).
- *
- * We increase resolution only if we have enough bits to allow this increased
- * resolution (i.e. 64-bit). The costs for increasing resolution when 32-bit
- * are pretty high and the returns do not justify the increased costs.
- */
-#ifdef CONFIG_64BIT
-#define em_scale_power(p) ((p) * 1000)
-#else
-#define em_scale_power(p) (p)
-#endif
 
 struct em_data_callback {
 	/**
@@ -89,34 +72,25 @@ int em_register_perf_domain(cpumask_t *span, unsigned int nr_states,
  * @pd		: performance domain for which energy has to be estimated
  * @max_util	: highest utilization among CPUs of the domain
  * @sum_util	: sum of the utilization of all CPUs in the domain
- * @allowed_cpu_cap	: maximum allowed CPU capacity for the @pd, which
-			  might reflect reduced frequency (due to thermal)
  *
  * Return: the sum of the energy consumed by the CPUs of the domain assuming
  * a capacity state satisfying the max utilization of the domain.
  */
 static inline unsigned long em_pd_energy(struct em_perf_domain *pd,
-				unsigned long max_util, unsigned long sum_util,
-				unsigned long allowed_cpu_cap)
+				unsigned long max_util, unsigned long sum_util)
 {
 	unsigned long freq, scale_cpu;
 	struct em_cap_state *cs;
 	int i, cpu;
 
 	/*
-	 * In order to predict the performance state, map the utilization of
-	 * the most utilized CPU of the performance domain to a requested
-	 * frequency, like schedutil. Take also into account that the real
-	 * frequency might be set lower (due to thermal capping). Thus, clamp
-	 * max utilization to the allowed CPU capacity before calculating
-	 * effective frequency.
+	 * In order to predict the capacity state, map the utilization of the
+	 * most utilized CPU of the performance domain to a requested frequency,
+	 * like schedutil.
 	 */
 	cpu = cpumask_first(to_cpumask(pd->cpus));
 	scale_cpu = arch_scale_cpu_capacity(NULL, cpu);
 	cs = &pd->table[pd->nr_cap_states - 1];
-
-	max_util = map_util_perf(max_util);
-	max_util = min(max_util, allowed_cpu_cap);
 	freq = map_util_freq(max_util, cs->frequency, scale_cpu);
 
 	/*
@@ -137,7 +111,9 @@ static inline unsigned long em_pd_energy(struct em_perf_domain *pd,
 	 *   cs->cap = --------------------                          (1)
 	 *                 cpu_max_freq
 	 *
-	 * So, the energy consumed by this CPU at that capacity state is:
+	 * So, ignoring the costs of idle states (which are not available in
+	 * the EM), the energy consumed by this CPU at that capacity state is
+	 * estimated as:
 	 *
 	 *             cs->power * cpu_util
 	 *   cpu_nrg = --------------------                          (2)
@@ -184,6 +160,7 @@ static inline int em_pd_nr_cap_states(struct em_perf_domain *pd)
 }
 
 #else
+struct em_perf_domain {};
 struct em_data_callback {};
 #define EM_DATA_CB(_active_power_cb) { }
 
@@ -197,8 +174,7 @@ static inline struct em_perf_domain *em_cpu_get(int cpu)
 	return NULL;
 }
 static inline unsigned long em_pd_energy(struct em_perf_domain *pd,
-			unsigned long max_util, unsigned long sum_util,
-			unsigned long allowed_cpu_cap)
+			unsigned long max_util, unsigned long sum_util)
 {
 	return 0;
 }

@@ -11,6 +11,7 @@
 #include <linux/cpu.h>
 #include <linux/cpumask.h>
 #include <linux/energy_model.h>
+#include <linux/sched.h>
 #include <linux/slab.h>
 
 /* Mapping of each CPU to the performance domain to which it belongs. */
@@ -21,82 +22,6 @@ static DEFINE_PER_CPU(struct em_perf_domain *, em_data);
  * callbacks defined by drivers sleep.
  */
 static DEFINE_MUTEX(em_pd_mutex);
-
-static struct kobject *em_kobject;
-
-/* Getters for the attributes of em_perf_domain objects */
-struct em_pd_attr {
-	struct attribute attr;
-	ssize_t (*show)(struct em_perf_domain *pd, char *buf);
-	ssize_t (*store)(struct em_perf_domain *pd, const char *buf, size_t s);
-};
-
-#define EM_ATTR_LEN 13
-#define show_table_attr(_attr) \
-static ssize_t show_##_attr(struct em_perf_domain *pd, char *buf) \
-{ \
-	ssize_t cnt = 0; \
-	int i; \
-	for (i = 0; i < pd->nr_cap_states; i++) { \
-		if (cnt >= (ssize_t) (PAGE_SIZE / sizeof(char) \
-				      - (EM_ATTR_LEN + 2))) \
-			goto out; \
-		cnt += scnprintf(&buf[cnt], EM_ATTR_LEN + 1, "%lu ", \
-				 pd->table[i]._attr); \
-	} \
-out: \
-	cnt += sprintf(&buf[cnt], "\n"); \
-	return cnt; \
-}
-
-show_table_attr(power);
-show_table_attr(frequency);
-show_table_attr(cost);
-
-static ssize_t show_cpus(struct em_perf_domain *pd, char *buf)
-{
-	return sprintf(buf, "%*pbl\n", cpumask_pr_args(to_cpumask(pd->cpus)));
-}
-
-#define pd_attr(_name) em_pd_##_name##_attr
-#define define_pd_attr(_name) static struct em_pd_attr pd_attr(_name) = \
-		__ATTR(_name, 0444, show_##_name, NULL)
-
-define_pd_attr(power);
-define_pd_attr(frequency);
-define_pd_attr(cost);
-define_pd_attr(cpus);
-
-static struct attribute *em_pd_default_attrs[] = {
-	&pd_attr(power).attr,
-	&pd_attr(frequency).attr,
-	&pd_attr(cost).attr,
-	&pd_attr(cpus).attr,
-	NULL
-};
-
-#define to_pd(k) container_of(k, struct em_perf_domain, kobj)
-#define to_pd_attr(a) container_of(a, struct em_pd_attr, attr)
-
-static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
-{
-	struct em_perf_domain *pd = to_pd(kobj);
-	struct em_pd_attr *pd_attr = to_pd_attr(attr);
-	ssize_t ret;
-
-	ret = pd_attr->show(pd, buf);
-
-	return ret;
-}
-
-static const struct sysfs_ops em_pd_sysfs_ops = {
-	.show	= show,
-};
-
-static struct kobj_type ktype_em_pd = {
-	.sysfs_ops	= &em_pd_sysfs_ops,
-	.default_attrs	= em_pd_default_attrs,
-};
 
 static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 						struct em_data_callback *cb)
@@ -161,7 +86,7 @@ static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 		 */
 		opp_eff = freq / power;
 		if (opp_eff >= prev_opp_eff)
-			pr_debug("pd%d: hertz/watts ratio non-monotonically decreasing: em_cap_state %d >= em_cap_state%d\n",
+			pr_warn("pd%d: hertz/watts ratio non-monotonically decreasing: em_cap_state %d >= em_cap_state%d\n",
 					cpu, i, i - 1);
 		prev_opp_eff = opp_eff;
 	}
@@ -169,19 +94,8 @@ static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 	/* Compute the cost of each capacity_state. */
 	fmax = (u64) table[nr_states - 1].frequency;
 	for (i = 0; i < nr_states; i++) {
-		unsigned long power_res = em_scale_power(table[i].power);
-
-		table[i].cost = div64_u64(fmax * power_res,
+		table[i].cost = div64_u64(fmax * table[i].power,
 					  table[i].frequency);
-
-		if (i > 0 && (table[i].cost < table[i - 1].cost) &&
-				(table[i].power > table[i - 1].power)) {
-			table[i].cost = table[i - 1].cost;
-		}
-
-		pr_info("pd%d (%*pbl): <freq=%ld, power=%ld, cost=%ld>\n",
-				cpu, cpumask_pr_args(span), table[i].frequency,
-				table[i].power, table[i].cost);
 	}
 
 	pd->table = table;
@@ -240,15 +154,6 @@ int em_register_perf_domain(cpumask_t *span, unsigned int nr_states,
 	 * let the driver-defined callback functions sleep.
 	 */
 	mutex_lock(&em_pd_mutex);
-
-	if (!em_kobject) {
-		em_kobject = kobject_create_and_add("energy_model",
-						&cpu_subsys.dev_root->kobj);
-		if (!em_kobject) {
-			ret = -ENODEV;
-			goto unlock;
-		}
-	}
 
 	for_each_cpu(cpu, span) {
 		/* Make sure we don't register again an existing domain. */
