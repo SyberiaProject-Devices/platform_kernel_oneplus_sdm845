@@ -761,17 +761,10 @@ static unsigned int osm_cpufreq_get(unsigned int cpu)
 static int osm_cpufreq_cpu_init(struct cpufreq_policy *policy)
 {
 	struct cpufreq_frequency_table *table;
-	struct device *cpu_dev;
 	struct clk_osm *c, *parent;
 	struct clk_hw *p_hw;
 	unsigned int i, prev_cc = 0;
 	unsigned int xo_kHz;
-
-	cpu_dev = get_cpu_device(policy->cpu);
-	if (!cpu_dev) {
-		pr_err("failed to get cpu%d device\n", policy->cpu);
-	    return -ENODEV;
-	}
 
 	c = osm_configure_policy(policy);
 	if (!c) {
@@ -841,7 +834,6 @@ static int osm_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	policy->fast_switch_possible = true;
 	policy->driver_data = c;
 
-	dev_pm_opp_of_register_em(cpu_dev, policy->cpus);
 	return 0;
 }
 
@@ -862,6 +854,7 @@ static struct cpufreq_driver qcom_osm_cpufreq_driver = {
 	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK |
 			  CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
 	.verify		= cpufreq_generic_frequency_table_verify,
+	.register_em	= cpufreq_register_em_with_opp,
 	.target_index	= osm_cpufreq_target_index,
 	.get		= osm_cpufreq_get,
 	.init		= osm_cpufreq_cpu_init,
