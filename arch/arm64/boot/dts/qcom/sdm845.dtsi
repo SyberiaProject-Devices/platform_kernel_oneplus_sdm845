@@ -132,6 +132,7 @@
 			reg = <0x0 0x200>;
 			enable-method = "psci";
 			efficiency = <607>;
+			dynamic-power-coefficient = <100>;
 			clock-frequency = <1766400000>;
 			cache-size = <0x8000>;
 			cpu-release-addr = <0x0 0x90000000>;
