@@ -2393,8 +2393,6 @@ struct task_struct {
 	/* A live task holds one reference. */
 	atomic_t stack_refcount;
 #endif
-	struct fuse_package *fpack;
-
 /* CPU-specific state of this task */
 	struct thread_struct thread;
 /*
@@ -2403,12 +2401,6 @@ struct task_struct {
  *
  * Do not put anything below here!
  */
-};
-
-struct fuse_package {
-	bool fuse_open_req;
-	struct file *filp;
-	char *iname;
 };
 
 #ifdef CONFIG_ARCH_WANTS_DYNAMIC_TASK_STRUCT
