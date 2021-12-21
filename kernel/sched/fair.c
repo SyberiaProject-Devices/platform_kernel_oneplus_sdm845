@@ -27,7 +27,6 @@
 #include <linux/cpumask.h>
 #include <linux/cpuidle.h>
 #include <linux/slab.h>
-#include <linux/profile.h>
 #include <linux/interrupt.h>
 #include <linux/mempolicy.h>
 #include <linux/migrate.h>
@@ -10984,16 +10983,10 @@ static inline void task_tick_uclamp(struct rq *rq, struct task_struct *curr)
 	 *
 	 * If uclamp_max was ignored, we might need to reverse this condition.
 	 *
-	 * Or, we might have not ignored (becuase uclamp_min != 0 for example)
-	 * but this condition has changed now, so re-evaluate and if necessary
-	 * ignore it.
 	 */
 	if (is_ignored && !can_ignore) {
 		uclamp_reset_ignore_uclamp_max(curr);
 		uclamp_rq_inc_id(rq, curr, UCLAMP_MAX);
-	} else if (!is_ignored && can_ignore) {
-		uclamp_set_ignore_uclamp_max(curr);
-		uclamp_rq_dec_id(rq, curr, UCLAMP_MAX);
 	}
 }
 #else

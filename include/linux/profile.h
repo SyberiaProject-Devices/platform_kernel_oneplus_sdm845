@@ -5,6 +5,7 @@
 #include <linux/init.h>
 #include <linux/cpumask.h>
 #include <linux/cache.h>
+#include <linux/sched.h>
 
 #include <asm/errno.h>
 
