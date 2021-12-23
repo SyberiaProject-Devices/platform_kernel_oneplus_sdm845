@@ -670,6 +670,20 @@ config GENERIC_SCHED_CLOCK
 
 menu "Scheduler features"
 
+config VENDOR_SCHED
+	bool "Vendor scheduler based on tracepoint hooks"
+	default n
+
+config UCLAMP_STATS
+	bool "Uclamp stats"
+	depends on VENDOR_SCHED
+	default y
+
+config VH_SCHED_CPU_NR
+	int "CPU number on this platform"
+	depends on VENDOR_SCHED
+	default 8
+
 config UCLAMP_TASK
 	bool "Enable utilization clamping for RT/FAIR tasks"
 	depends on CPU_FREQ_GOV_SCHEDUTIL
