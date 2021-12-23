@@ -1255,8 +1255,6 @@ struct sched_group_energy {
 
 extern bool sched_is_energy_aware(void);
 
-unsigned long capacity_curr_of(int cpu);
-
 struct sched_group;
 
 struct eas_stats {

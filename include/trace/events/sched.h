@@ -169,15 +169,14 @@ TRACE_EVENT(sched_switch,
  */
 TRACE_EVENT(sched_migrate_task,
 
-	TP_PROTO(struct task_struct *p, int dest_cpu, unsigned int load),
+	TP_PROTO(struct task_struct *p, int dest_cpu),
 
-	TP_ARGS(p, dest_cpu, load),
+	TP_ARGS(p, dest_cpu),
 
 	TP_STRUCT__entry(
 		__array(	char,	comm,	TASK_COMM_LEN	)
 		__field(	pid_t,	pid			)
 		__field(	int,	prio			)
-		__field(unsigned int,	load			)
 		__field(	int,	orig_cpu		)
 		__field(	int,	dest_cpu		)
 	),
@@ -186,13 +185,12 @@ TRACE_EVENT(sched_migrate_task,
 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
 		__entry->pid		= p->pid;
 		__entry->prio		= p->prio; /* XXX SCHED_DEADLINE */
-		__entry->load		= load;
 		__entry->orig_cpu	= task_cpu(p);
 		__entry->dest_cpu	= dest_cpu;
 	),
 
-	TP_printk("comm=%s pid=%d prio=%d load=%d orig_cpu=%d dest_cpu=%d",
-		  __entry->comm, __entry->pid, __entry->prio,  __entry->load,
+	TP_printk("comm=%s pid=%d prio=%d orig_cpu=%d dest_cpu=%d",
+		  __entry->comm, __entry->pid, __entry->prio,
 		  __entry->orig_cpu, __entry->dest_cpu)
 );
 

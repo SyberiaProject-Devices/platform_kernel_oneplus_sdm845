@@ -1232,6 +1232,7 @@ static inline void uclamp_rq_reinc_id(struct rq *rq, struct task_struct *p,
 		rq->uclamp_flags &= ~UCLAMP_FLAG_IDLE;
 }
 
+#ifdef CONFIG_UCLAMP_TASK_GROUP
 static inline void
 uclamp_update_active(struct task_struct *p)
 {
@@ -1482,38 +1483,6 @@ static void uclamp_fork(struct task_struct *p)
 	}
 }
 
-#ifdef CONFIG_SMP
-unsigned int uclamp_task(struct task_struct *p)
-{
-	unsigned long util;
-
-	util = task_util_est(p);
-	util = max(util, uclamp_eff_value(p, UCLAMP_MIN));
-	util = min(util, uclamp_eff_value(p, UCLAMP_MAX));
-
-	return util;
-}
-
-bool uclamp_boosted(struct task_struct *p)
-{
-	return uclamp_eff_value(p, UCLAMP_MIN) > 0;
-}
-
-bool uclamp_latency_sensitive(struct task_struct *p)
-{
-#ifdef CONFIG_UCLAMP_TASK_GROUP
-	struct cgroup_subsys_state *css = task_css(p, cpu_cgrp_id);
-	struct task_group *tg;
-
-	if (!css)
-		return false;
-	tg = container_of(css, struct task_group, css);
-
-	return tg->latency_sensitive;
-#else
-	return false;
-#endif
-}
 #endif /* CONFIG_SMP */
 
 static void uclamp_post_fork(struct task_struct *p)
@@ -2217,7 +2186,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
 #endif
 #endif
 
-	trace_sched_migrate_task(p, new_cpu, task_util(p));
+	trace_sched_migrate_task(p, new_cpu);
 
 	if (task_cpu(p) != new_cpu) {
 		if (p->sched_class->migrate_task_rq)
@@ -8060,8 +8029,7 @@ void threadgroup_change_end(struct task_struct *tsk)
 	cgroup_threadgroup_change_end(tsk);
 }
 
-
-inline struct task_group *css_tg(struct cgroup_subsys_state *css)
+static inline struct task_group *css_tg(struct cgroup_subsys_state *css)
 {
 	return css ? container_of(css, struct task_group, css) : NULL;
 }

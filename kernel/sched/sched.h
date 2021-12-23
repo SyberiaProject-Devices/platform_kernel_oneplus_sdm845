@@ -487,8 +487,6 @@ static inline void set_task_rq_fair(struct sched_entity *se,
 #endif /* CONFIG_SMP */
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 
-extern struct task_group *css_tg(struct cgroup_subsys_state *css);
-
 #else /* CONFIG_CGROUP_SCHED */
 
 struct cfs_bandwidth { };
@@ -2189,16 +2187,6 @@ static inline unsigned long cpu_util_cfs(struct rq *rq)
 	return util;
 }
 
-static inline unsigned long task_util(struct task_struct *p)
-{
-	return READ_ONCE(p->se.avg.util_avg);
-}
-
-static inline unsigned long capacity_orig_of(int cpu)
-{
-	return cpu_rq(cpu)->cpu_capacity_orig;
-}
-
 /**
  * enum cpu_util_type - CPU utilization type
  * @FREQUENCY_UTIL:	Utilization used to select frequency
@@ -2233,59 +2221,6 @@ static inline unsigned long cpu_util_dl(struct rq *rq)
 static inline unsigned long cpu_util_rt(struct rq *rq)
 {
     return READ_ONCE(rq->avg_rt.util_avg);
-}
-
-
-/**
- * Amount of capacity of a CPU that is (estimated to be) used by CFS tasks
- * @cpu: the CPU to get the utilization of
- *
- * The unit of the return value must be the one of capacity so we can compare
- * the utilization with the capacity of the CPU that is available for CFS task
- * (ie cpu_capacity).
- *
- * cfs_rq.avg.util_avg is the sum of running time of runnable tasks plus the
- * recent utilization of currently non-runnable tasks on a CPU. It represents
- * the amount of utilization of a CPU in the range [0..capacity_orig] where
- * capacity_orig is the cpu_capacity available at the highest frequency
- * (arch_scale_freq_capacity()).
- * The utilization of a CPU converges towards a sum equal to or less than the
- * current capacity (capacity_curr <= capacity_orig) of the CPU because it is
- * the running time on this CPU scaled by capacity_curr.
- *
- * The estimated utilization of a CPU is defined to be the maximum between its
- * cfs_rq.avg.util_avg and the sum of the estimated utilization of the tasks
- * currently RUNNABLE on that CPU.
- * This allows to properly represent the expected utilization of a CPU which
- * has just got a big task running since a long sleep period. At the same time
- * however it preserves the benefits of the "blocked utilization" in
- * describing the potential for other tasks waking up on the same CPU.
- *
- * Nevertheless, cfs_rq.avg.util_avg can be higher than capacity_curr or even
- * higher than capacity_orig because of unfortunate rounding in
- * cfs.avg.util_avg or just after migrating tasks and new task wakeups until
- * the average stabilizes with the new running time. We need to check that the
- * utilization stays within the range of [0..capacity_orig] and cap it if
- * necessary. Without utilization capping, a group could be seen as overloaded
- * (CPU0 utilization at 121% + CPU1 utilization at 80%) whereas CPU1 has 20% of
- * available capacity. We allow utilization to overshoot capacity_curr (but not
- * capacity_orig) as it useful for predicting the capacity required after task
- * migrations (scheduler-driven DVFS).
- *
- * Return: the (estimated) utilization for the specified CPU
- */
-static inline unsigned long cpu_util(int cpu)
-{
-	struct cfs_rq *cfs_rq;
-	unsigned int util;
-
-	cfs_rq = &cpu_rq(cpu)->cfs;
-	util = READ_ONCE(cfs_rq->avg.util_avg);
-
-	if (sched_feat(UTIL_EST))
-		util = max(util, READ_ONCE(cfs_rq->avg.util_est.enqueued));
-
-	return min_t(unsigned long, util, capacity_orig_of(cpu));
 }
 
 static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
@@ -2696,6 +2631,11 @@ out:
 	return clamp(util, min_util, max_util);
 }
 
+static inline bool uclamp_boosted(struct task_struct *p)
+{
+	return uclamp_eff_value(p, UCLAMP_MIN) > 0;
+}
+
 /*
  * When uclamp is compiled in, the aggregation at rq level is 'turned off'
  * by default in the fast path and only gets turned on once userspace performs
@@ -2722,10 +2662,24 @@ static inline bool uclamp_is_used(void)
 }
 #endif /* CONFIG_UCLAMP_TASK */
 
-unsigned long task_util_est(struct task_struct *p);
-unsigned int uclamp_task(struct task_struct *p);
-bool uclamp_latency_sensitive(struct task_struct *p);
-bool uclamp_boosted(struct task_struct *p);
+#ifdef CONFIG_UCLAMP_TASK_GROUP
+static inline bool uclamp_latency_sensitive(struct task_struct *p)
+{
+	struct cgroup_subsys_state *css = task_css(p, cpu_cgrp_id);
+	struct task_group *tg;
+
+	if (!css)
+		return false;
+	tg = container_of(css, struct task_group, css);
+
+	return tg->latency_sensitive;
+}
+#else
+static inline bool uclamp_latency_sensitive(struct task_struct *p)
+{
+	return false;
+}
+#endif /* CONFIG_UCLAMP_TASK_GROUP */
 
 #ifdef arch_scale_freq_capacity
 #ifndef arch_scale_freq_invariant
@@ -2743,6 +2697,13 @@ static inline bool energy_aware(void)
 {
 	return sched_feat(ENERGY_AWARE);
 }
+
+#ifdef CONFIG_SMP
+static inline unsigned long capacity_orig_of(int cpu)
+{
+	return cpu_rq(cpu)->cpu_capacity_orig;
+}
+#endif
 
 struct sched_avg_stats {
     int nr;
