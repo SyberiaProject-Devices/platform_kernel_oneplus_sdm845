@@ -25,6 +25,9 @@
  *  2007-11-29  RT balancing improvements by Steven Rostedt, Gregory Haskins,
  *              Thomas Gleixner, Mike Kravetz
  */
+#define CREATE_TRACE_POINTS
+#include <trace/events/sched.h>
+#undef CREATE_TRACE_POINTS
 
 #include <linux/kasan.h>
 #include <linux/mm.h>
@@ -102,8 +105,7 @@
 #include "pelt.h"
 #include "smp.h"
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/sched.h>
+#include <trace/hooks/sched.h>
 
 ATOMIC_NOTIFIER_HEAD(load_alert_notifier_head);
 
@@ -1028,6 +1030,12 @@ uclamp_eff_get(struct task_struct *p, enum uclamp_id clamp_id)
 {
 	struct uclamp_se uc_req = uclamp_tg_restrict(p, clamp_id);
 	struct uclamp_se uc_max = uclamp_default[clamp_id];
+	struct uclamp_se uc_eff;
+	int ret = 0;
+
+	trace_android_rvh_uclamp_eff_get(p, clamp_id, &uc_max, &uc_eff, &ret);
+	if (ret)
+		return uc_eff;
 
 	/* System default restrictions always apply */
 	if (unlikely(uc_req.value > uc_max.value))
@@ -1443,12 +1451,14 @@ static void __setscheduler_uclamp(struct task_struct *p,
 	    attr->sched_util_min != -1) {
 		uclamp_se_set(&p->uclamp_req[UCLAMP_MIN],
 			      attr->sched_util_min, true);
+		trace_android_vh_setscheduler_uclamp(p, UCLAMP_MIN, attr->sched_util_min);
 	}
 
 	if (attr->sched_flags & SCHED_FLAG_UTIL_CLAMP_MAX &&
 	    attr->sched_util_max != -1) {
 		uclamp_se_set(&p->uclamp_req[UCLAMP_MAX],
 			      attr->sched_util_max, true);
+		trace_android_vh_setscheduler_uclamp(p, UCLAMP_MAX, attr->sched_util_max);
 	}
 }
 
@@ -3388,6 +3398,8 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 	int cpu;
 
 	cpu = get_cpu();
+
+	trace_android_rvh_sched_fork(p);
 
 	__sched_fork(clone_flags, p);
 #ifdef CONFIG_CPU_FREQ_TIMES
@@ -8089,6 +8101,7 @@ static int cpu_cgroup_css_online(struct cgroup_subsys_state *css)
 	rcu_read_unlock();
 	mutex_unlock(&uclamp_mutex);
 #endif
+	trace_android_rvh_cpu_cgroup_online(css);
 
 	return 0;
 }

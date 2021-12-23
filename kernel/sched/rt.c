@@ -7,6 +7,8 @@
 #include "pelt.h"
 #include <linux/cpuidle.h>
 
+#include <trace/hooks/sched.h>
+
 #define DEFAULT_IMPRATANCE_THRESHOLD	1024
 #define DEF_UTIL_THRESHOLD  1280
 #define CPU_NUM             8
@@ -1571,6 +1573,9 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	bool may_not_preempt;
 	bool sync = !!(flags & WF_SYNC);
 	int this_cpu;
+
+	trace_android_rvh_select_task_rq_rt(p, cpu, flags & 0xF,
+					    flags, &target_cpu);
 
 	/* Add a hook for pixel mod */
 	target_cpu = select_task_rq_rt_pixel(p, cpu, flags & 0xF,

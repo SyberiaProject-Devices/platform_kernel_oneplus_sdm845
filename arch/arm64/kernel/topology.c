@@ -24,6 +24,7 @@
 
 #include <asm/cputype.h>
 #include <asm/topology.h>
+#include <trace/hooks/topology.h>
 
 /*
  * cpu power table
@@ -82,6 +83,8 @@ void arch_set_freq_scale(struct cpumask *cpus, unsigned long cur_freq,
 	int i;
 
 	scale = (cur_freq << SCHED_CAPACITY_SHIFT) / max_freq;
+
+	trace_android_vh_arch_set_freq_scale(cpus, cur_freq, max_freq, &scale);
 
 	for_each_cpu(i, cpus) {
 		per_cpu(freq_scale, i) = scale;
