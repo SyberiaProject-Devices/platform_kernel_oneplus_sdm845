@@ -62,6 +62,7 @@ struct sched_param {
 #include <linux/magic.h>
 
 #include <asm/processor.h>
+#include <linux/android_vendor.h>
 
 #define SCHED_ATTR_SIZE_VER0	48	/* sizeof first published struct */
 #define SCHED_ATTR_SIZE_VER1	56	/* add: util_{min,max} */
@@ -2390,6 +2391,8 @@ struct task_struct {
 	/* A live task holds one reference. */
 	atomic_t stack_refcount;
 #endif
+	ANDROID_VENDOR_DATA_ARRAY(1, 64);
+
 /* CPU-specific state of this task */
 	struct thread_struct thread;
 /*

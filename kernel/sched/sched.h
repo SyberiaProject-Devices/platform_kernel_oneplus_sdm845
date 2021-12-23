@@ -20,6 +20,7 @@
 #include <linux/tick.h>
 #include <linux/slab.h>
 #include <linux/sched_energy.h>
+#include <linux/android_vendor.h>
 
 #include "cpupri.h"
 #include "cpudeadline.h"
@@ -402,6 +403,7 @@ struct task_group {
 	struct uclamp_se	uclamp[UCLAMP_CNT];
 	/* Latency-sensitive flag used for a task group */
 	unsigned int		latency_sensitive;
+	ANDROID_VENDOR_DATA_ARRAY(1, 4);
 #endif
 };
 
