@@ -24,6 +24,7 @@
 
 #include "cpupri.h"
 #include "cpudeadline.h"
+#include <trace/events/sched.h>
 #include <linux/cgroup.h>
 
 #ifdef CONFIG_SCHED_DEBUG
@@ -51,6 +52,8 @@ extern atomic_long_t calc_load_tasks;
 
 extern void calc_global_load_tick(struct rq *this_rq);
 extern long calc_load_fold_active(struct rq *this_rq, long adjust);
+
+extern void call_trace_sched_update_nr_running(struct rq *rq, int count);
 
 /*
  * Helpers for converting nanosecond timing to jiffy resolution
@@ -2062,12 +2065,16 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
 
 	rq->nr_running = prev_nr + count;
 
-	if (prev_nr < 2 && rq->nr_running >= 2) {
+	if (trace_sched_update_nr_running_tp_enabled()) {
+		call_trace_sched_update_nr_running(rq, count);
+	}
+
 #ifdef CONFIG_SMP
+	if (prev_nr < 2 && rq->nr_running >= 2) {
 		if (!rq->rd->overload)
 			rq->rd->overload = true;
-#endif
 	}
+#endif
 
 	sched_update_tick_dependency(rq);
 }
@@ -2075,6 +2082,9 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
 static inline void sub_nr_running(struct rq *rq, unsigned count)
 {
 	rq->nr_running -= count;
+	if (trace_sched_update_nr_running_tp_enabled()) {
+		call_trace_sched_update_nr_running(rq, count);
+	}
 	/* Check if we still need preemption */
 	sched_update_tick_dependency(rq);
 }
