@@ -7,6 +7,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/cpufreq.h>
 #include <trace/hooks/sched.h>
@@ -162,5 +163,6 @@ static int vh_sched_init(void)
 	return 0;
 }
 
-module_init(vh_sched_init);
+//module_init(vh_sched_init);
+late_initcall(vh_sched_init);
 MODULE_LICENSE("GPL v2");
