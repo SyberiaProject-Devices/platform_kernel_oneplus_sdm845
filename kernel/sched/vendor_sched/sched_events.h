@@ -45,6 +45,57 @@ TRACE_EVENT(sched_pelt_cfs,
 		  __entry->RBL_LOAD_ENTRY,__entry->util)
 );
 
+TRACE_EVENT(sched_find_best_target,
+
+	TP_PROTO(struct task_struct *tsk, bool prefer_idle,
+		 bool prefer_high_cap, bool prefer_prev, bool sync_boost,
+		 unsigned long task_util, int start_cpu,
+		 int best_idle, int best_active, int best_importance,
+		 int backup, int target),
+
+	TP_ARGS(tsk, prefer_idle, prefer_high_cap, prefer_prev, sync_boost, task_util,
+		start_cpu, best_idle, best_active, best_importance, backup, target),
+
+	TP_STRUCT__entry(
+		__array(char,		comm, TASK_COMM_LEN)
+		__field(pid_t,		pid)
+		__field(unsigned long,	task_util)
+		__field(bool,		prefer_idle)
+		__field(bool,		prefer_high_cap)
+		__field(bool,		prefer_prev)
+		__field(bool,		sync_boost)
+		__field(int,		start_cpu)
+		__field(int,		best_idle)
+		__field(int,		best_active)
+		__field(int,		best_importance)
+		__field(int,		backup)
+		__field(int,		target)
+		),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->pid             = tsk->pid;
+		__entry->task_util       = task_util;
+		__entry->prefer_idle     = prefer_idle;
+		__entry->prefer_high_cap = prefer_high_cap;
+		__entry->prefer_prev     = prefer_prev;
+		__entry->sync_boost      = sync_boost;
+		__entry->start_cpu       = start_cpu;
+		__entry->best_idle       = best_idle;
+		__entry->best_active     = best_active;
+		__entry->best_importance = best_importance;
+		__entry->backup          = backup;
+		__entry->target          = target;
+		),
+
+	TP_printk("pid=%d comm=%s task_util=%lu prefer_idle=%d prefer_high_cap=%d prefer_prev=%d " \
+		  "sync_boost=%d start_cpu=%d best_idle=%d best_active=%d best_importance=%d " \
+		  "backup=%d target=%d",
+		  __entry->pid, __entry->comm, __entry->task_util, __entry->prefer_idle,
+		  __entry->prefer_high_cap, __entry->prefer_prev, __entry->sync_boost,
+		  __entry->start_cpu, __entry->best_idle, __entry->best_active,
+		  __entry->best_importance, __entry->backup, __entry->target)
+);
 
 TRACE_EVENT(sched_find_energy_efficient_cpu,
 

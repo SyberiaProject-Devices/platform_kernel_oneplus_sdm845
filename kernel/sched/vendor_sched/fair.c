@@ -1040,9 +1040,9 @@ check:
 		cpumask_set_cpu(best_active_cpu, cpus);
 
 out:
-//	trace_sched_find_best_target(p, prefer_idle, prefer_high_cap, prefer_prev, sync_boost,
-//				     task_util_est(p), start_cpu, best_idle_cpu, best_active_cpu,
-//				     best_importance_cpu, backup_cpu, target_cpu);
+	trace_sched_find_best_target(p, prefer_idle, prefer_high_cap, prefer_prev, sync_boost,
+				     task_util_est(p), start_cpu, best_idle_cpu, best_active_cpu,
+				     best_importance_cpu, backup_cpu, target_cpu);
 	return;
 }
 
@@ -1345,7 +1345,7 @@ void rvh_util_est_update_pixel_mod(void *data, struct cfs_rq *cfs_rq, struct tas
 	int cpu;
 	unsigned long scale_cpu;
 
-	*ret =1;
+	*ret = 1;
 
 	if (!sched_feat(UTIL_EST))
 		return;
@@ -1442,6 +1442,8 @@ void rvh_util_est_update_pixel_mod(void *data, struct cfs_rq *cfs_rq, struct tas
 done:
 	ue.enqueued |= UTIL_AVG_UNCHANGED;
 	WRITE_ONCE(p->se.avg.util_est, ue);
+
+	trace_sched_util_est_se_tp(&p->se);
 }
 
 void rvh_post_init_entity_util_avg_pixel_mod(void *data, struct sched_entity *se)

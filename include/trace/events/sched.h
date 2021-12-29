@@ -721,59 +721,6 @@ TRACE_EVENT(sched_boost_task,
 );
 
 /*
- * Tracepoint for find_best_target
- */
-TRACE_EVENT(sched_find_best_target,
-
-	TP_PROTO(struct task_struct *tsk, bool prefer_idle,
-		unsigned long min_util, int start_cpu,
-		int best_idle, int best_active, int most_spare_cap, int target,
-		int backup_cpu, bool boosted),
-
-	TP_ARGS(tsk, prefer_idle, min_util, start_cpu,
-		best_idle, best_active, most_spare_cap, target,
-		backup_cpu, boosted),
-
-	TP_STRUCT__entry(
-		__array( char,	comm,	TASK_COMM_LEN	)
-		__field( pid_t,	pid			)
-		__field( unsigned long,	min_util	)
-		__field( bool,	prefer_idle		)
-		__field( int,	start_cpu		)
-		__field( int,	best_idle		)
-		__field( int,	best_active		)
-		__field( int,	most_spare_cap		)
-		__field( int,	target			)
-		__field( int,	backup_cpu)
-		__field( bool,	boosted			)
-	),
-
-	TP_fast_assign(
-		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
-		__entry->pid		= tsk->pid;
-		__entry->min_util	= min_util;
-		__entry->prefer_idle	= prefer_idle;
-		__entry->start_cpu 	= start_cpu;
-		__entry->best_idle	= best_idle;
-		__entry->best_active	= best_active;
-		__entry->most_spare_cap	= most_spare_cap;
-		__entry->target		= target;
-		__entry->backup_cpu	= backup_cpu;
-		__entry->boosted	= boosted;
-	),
-
-	TP_printk("pid=%d comm=%s prefer_idle=%d start_cpu=%d "
-		  "best_idle=%d best_active=%d most_spare_cap=%d target=%d backup=%d boosted=%d",
-		__entry->pid, __entry->comm,
-		__entry->prefer_idle, __entry->start_cpu,
-		__entry->best_idle, __entry->best_active,
-		__entry->most_spare_cap,
-		__entry->target,
-		__entry->backup_cpu,
-		__entry->boosted)
-);
-
-/*
  * Tracepoint for system overutilized flag
  */
 TRACE_EVENT(sched_overutilized,
