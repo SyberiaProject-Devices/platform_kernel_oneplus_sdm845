@@ -41,9 +41,11 @@ void bacct_add_tsk(struct user_namespace *user_ns,
 	/* Convert to micro seconds */
 	do_div(delta, NSEC_PER_USEC);
 	stats->ac_etime = delta;
+
 	/* Convert to seconds for btime */
 	do_div(delta, USEC_PER_SEC);
 	stats->ac_btime = get_seconds() - delta;
+
 	if (tsk->flags & PF_EXITING)
 		stats->ac_exitcode = tsk->exit_code;
 	if (thread_group_leader(tsk) && (tsk->flags & PF_FORKNOEXEC))
