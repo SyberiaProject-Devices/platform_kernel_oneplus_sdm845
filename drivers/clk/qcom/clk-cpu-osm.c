@@ -852,7 +852,7 @@ static struct freq_attr *osm_cpufreq_attr[] = {
 
 static struct cpufreq_driver qcom_osm_cpufreq_driver = {
 	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK |
-			  CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
+			  CPUFREQ_HAVE_GOVERNOR_PER_POLICY | CPUFREQ_NEED_UPDATE_LIMITS,
 	.verify		= cpufreq_generic_frequency_table_verify,
 	.register_em	= cpufreq_register_em_with_opp,
 	.target_index	= osm_cpufreq_target_index,
