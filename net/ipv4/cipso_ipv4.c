@@ -265,7 +265,7 @@ static int cipso_v4_cache_check(const unsigned char *key,
 		    entry->key_len == key_len &&
 		    memcmp(entry->key, key, key_len) == 0) {
 			entry->activity += 1;
-			refcount_inc(&entry->lsm_data->refcount);
+			atomic_inc(&entry->lsm_data->refcount);
 			secattr->cache = entry->lsm_data;
 			secattr->flags |= NETLBL_SECATTR_CACHE;
 			secattr->type = NETLBL_NLTYPE_CIPSOV4;
@@ -332,7 +332,7 @@ int cipso_v4_cache_add(const unsigned char *cipso_ptr,
 	}
 	entry->key_len = cipso_ptr_len;
 	entry->hash = cipso_v4_map_cache_hash(cipso_ptr, cipso_ptr_len);
-	refcount_inc(&secattr->cache->refcount);
+	atomic_inc(&secattr->cache->refcount);
 	entry->lsm_data = secattr->cache;
 
 	bkt = entry->hash & (CIPSO_V4_CACHE_BUCKETS - 1);
@@ -375,7 +375,7 @@ static struct cipso_v4_doi *cipso_v4_doi_search(u32 doi)
 	struct cipso_v4_doi *iter;
 
 	list_for_each_entry_rcu(iter, &cipso_v4_doi_list, list)
-		if (iter->doi == doi && refcount_read(&iter->refcount))
+		if (iter->doi == doi && atomic_read(&iter->refcount))
 			return iter;
 	return NULL;
 }
@@ -429,7 +429,7 @@ int cipso_v4_doi_add(struct cipso_v4_doi *doi_def,
 		}
 	}
 
-	refcount_set(&doi_def->refcount, 1);
+	atomic_set(&doi_def->refcount, 1);
 
 	spin_lock(&cipso_v4_doi_list_lock);
 	if (cipso_v4_doi_search(doi_def->doi)) {
@@ -534,16 +534,10 @@ int cipso_v4_doi_remove(u32 doi, struct netlbl_audit *audit_info)
 		ret_val = -ENOENT;
 		goto doi_remove_return;
 	}
-	if (!refcount_dec_and_test(&doi_def->refcount)) {
-		spin_unlock(&cipso_v4_doi_list_lock);
-		ret_val = -EBUSY;
-		goto doi_remove_return;
-	}
 	list_del_rcu(&doi_def->list);
 	spin_unlock(&cipso_v4_doi_list_lock);
 
-	cipso_v4_cache_invalidate();
-	call_rcu(&doi_def->rcu, cipso_v4_doi_free_rcu);
+	cipso_v4_doi_putdef(doi_def);
 	ret_val = 0;
 
 doi_remove_return:
@@ -577,7 +571,7 @@ struct cipso_v4_doi *cipso_v4_doi_getdef(u32 doi)
 	doi_def = cipso_v4_doi_search(doi);
 	if (!doi_def)
 		goto doi_getdef_return;
-	if (!refcount_inc_not_zero(&doi_def->refcount))
+	if (!atomic_inc_not_zero(&doi_def->refcount))
 		doi_def = NULL;
 
 doi_getdef_return:
@@ -598,11 +592,8 @@ void cipso_v4_doi_putdef(struct cipso_v4_doi *doi_def)
 	if (!doi_def)
 		return;
 
-	if (!refcount_dec_and_test(&doi_def->refcount))
+	if (!atomic_dec_and_test(&doi_def->refcount))
 		return;
-	spin_lock(&cipso_v4_doi_list_lock);
-	list_del_rcu(&doi_def->list);
-	spin_unlock(&cipso_v4_doi_list_lock);
 
 	cipso_v4_cache_invalidate();
 	call_rcu(&doi_def->rcu, cipso_v4_doi_free_rcu);
@@ -631,7 +622,7 @@ int cipso_v4_doi_walk(u32 *skip_cnt,
 
 	rcu_read_lock();
 	list_for_each_entry_rcu(iter_doi, &cipso_v4_doi_list, list)
-		if (refcount_read(&iter_doi->refcount) > 0) {
+		if (atomic_read(&iter_doi->refcount) > 0) {
 			if (doi_cnt++ < *skip_cnt)
 				continue;
 			ret_val = callback(iter_doi, cb_arg);
@@ -1103,8 +1094,8 @@ static int cipso_v4_map_cat_rng_hton(const struct cipso_v4_doi *doi_def,
 		array[array_cnt++] = iter;
 	}
 
-	for (iter = 0; --array_cnt > 0;) {
-		*((__be16 *)&net_cat[iter]) = htons(array[array_cnt]);
+	for (iter = 0; array_cnt > 0;) {
+		*((__be16 *)&net_cat[iter]) = htons(array[--array_cnt]);
 		iter += 2;
 		array_cnt--;
 		if (array[array_cnt] != 0) {
