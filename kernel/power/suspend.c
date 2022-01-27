@@ -30,12 +30,8 @@
 #include <linux/compiler.h>
 #include <linux/moduleparam.h>
 #include <linux/wakeup_reason.h>
-#include <linux/gpio.h>
 
 #include "power.h"
-
-
-#define PROC_AWAKE_ID 12 /* 12th bit */
 
 const char * const pm_labels[] = {
 	[PM_SUSPEND_TO_IDLE] = "freeze",
@@ -621,12 +617,8 @@ int pm_suspend(suspend_state_t state)
 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
 		return -EINVAL;
 
-	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 0);
-	pr_err("%s: PM_SUSPEND_PREPARE smp2p_change_state", __func__);
 	pr_info("PM: suspend entry (%s)\n", mem_sleep_labels[state]);
 	error = enter_state(state);
-	gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 1);
-	pr_err("%s: PM_POST_SUSPEND smp2p_change_state", __func__);
 
 	if (error) {
 		suspend_stats.fail++;
