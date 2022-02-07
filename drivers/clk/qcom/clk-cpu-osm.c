@@ -716,9 +716,6 @@ osm_cpufreq_target_index(struct cpufreq_policy *policy, unsigned int index)
 	struct clk_osm *c = policy->driver_data;
 
 	osm_set_index(c, index);
-	arch_set_freq_scale(policy->related_cpus,
-			    policy->freq_table[index].frequency,
-			    policy->cpuinfo.max_freq);
 	return 0;
 }
 
@@ -735,10 +732,6 @@ osm_cpufreq_fast_switch(struct cpufreq_policy *policy, unsigned int target_freq)
 
 	clk_osm_write_reg(c, index,
 			  DCVS_PERF_STATE_DESIRED_REG(c->core_num, is_sdm845v1));
-
-	arch_set_freq_scale(policy->related_cpus,
-			    policy->freq_table[index].frequency,
-			    policy->cpuinfo.max_freq);
 
 	return policy->freq_table[index].frequency;
 }
@@ -851,7 +844,7 @@ static struct freq_attr *osm_cpufreq_attr[] = {
 };
 
 static struct cpufreq_driver qcom_osm_cpufreq_driver = {
-	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK |
+	.flags		= CPUFREQ_NEED_INITIAL_FREQ_CHECK |
 			  CPUFREQ_HAVE_GOVERNOR_PER_POLICY | CPUFREQ_NEED_UPDATE_LIMITS,
 	.verify		= cpufreq_generic_frequency_table_verify,
 	.register_em	= cpufreq_register_em_with_opp,
