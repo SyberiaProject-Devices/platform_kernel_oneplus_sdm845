@@ -91,6 +91,8 @@ static int em_create_perf_table(struct device *dev, struct em_perf_domain *pd,
 		} else {
 			prev_cost = table[i].cost;
 		}
+	pr_info("EM: freq %d power %d cost %d",
+		table[i].frequency, table[i].power, table[i].cost);
 	}
 
 	pd->table = table;
