@@ -725,10 +725,7 @@ osm_cpufreq_fast_switch(struct cpufreq_policy *policy, unsigned int target_freq)
 	struct clk_osm *c = policy->driver_data;
 	int index;
 
-	index = cpufreq_frequency_table_target(policy, target_freq,
-							CPUFREQ_RELATION_L);
-	if (index < 0)
-		return 0;
+	index = policy->cached_resolved_idx;
 
 	clk_osm_write_reg(c, index,
 			  DCVS_PERF_STATE_DESIRED_REG(c->core_num, is_sdm845v1));
