@@ -44,6 +44,24 @@ static int __cam_isp_ctx_dequeue_request(struct cam_context *ctx,
 	return 0;
 }
 
+static int __cam_isp_ctx_dequeue_request(struct cam_context *ctx,
+	struct cam_ctx_request *req)
+{
+	struct cam_ctx_request           *req_current;
+	struct cam_ctx_request           *req_prev;
+
+	spin_lock_bh(&ctx->lock);
+	list_for_each_entry_safe_reverse(req_current, req_prev,
+		&ctx->pending_req_list, list) {
+		if (req->request_id == req_current->request_id) {
+			list_del_init(&req_current->list);
+			break;
+		}
+	}
+	spin_unlock_bh(&ctx->lock);
+	return 0;
+}
+
 static int __cam_isp_ctx_enqueue_request_in_order(
 	struct cam_context *ctx, struct cam_ctx_request *req)
 {
