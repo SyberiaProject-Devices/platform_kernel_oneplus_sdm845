@@ -29,7 +29,7 @@ SCHED_FEAT(LAST_BUDDY, true)
  * skip buddy i.e task called yield() is always skipped and the
  * next entity is selected to run irrespective of the vruntime
  */
-SCHED_FEAT(STRICT_SKIP_BUDDY, false)
+SCHED_FEAT(STRICT_SKIP_BUDDY, true)
 
 /*
  * Consider buddies to be cache hot, decreases the likelyness of a
@@ -49,7 +49,7 @@ SCHED_FEAT(DOUBLE_TICK, false)
 /*
  * Decrement CPU capacity based on time not spent running tasks
  */
-SCHED_FEAT(NONTASK_CAPACITY, true)
+SCHED_FEAT(NONTASK_CAPACITY, false)
 
 /*
  * Queue remote wakeups on the target CPU and process them
@@ -60,7 +60,7 @@ SCHED_FEAT(TTWU_QUEUE, false)
 /*
  * When doing wakeups, attempt to limit superfluous scans of the LLC domain.
  */
-SCHED_FEAT(SIS_PROP, true)
+SCHED_FEAT(SIS_PROP, false)
 
 #ifdef HAVE_RT_PUSH_IPI
 /*
@@ -75,7 +75,7 @@ SCHED_FEAT(SIS_PROP, true)
 SCHED_FEAT(RT_PUSH_IPI, true)
 #endif
 
-SCHED_FEAT(RT_RUNTIME_SHARE, true)
+SCHED_FEAT(RT_RUNTIME_SHARE, false)
 SCHED_FEAT(LB_MIN, false)
 SCHED_FEAT(ATTACH_AGE_LOAD, true)
 SCHED_FEAT(WA_IDLE, true)
