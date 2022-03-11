@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #define MIN_CAPACITY_CPU    0
-#define MID_CAPACITY_CPU    4
+#define MID_CAPACITY_CPU    0
 #define MAX_CAPACITY_CPU    4
 #define HIGH_CAPACITY_CPU   4
 #define CPU_NUM             8
@@ -10,6 +10,7 @@
 #define UCLAMP_STATS_STEP   (100 / (UCLAMP_STATS_SLOTS - 1))
 #define DEF_UTIL_THRESHOLD  1280
 #define DEF_UTIL_POST_INIT_SCALE  512
+#define C1_EXIT_LATENCY     1
 
 /**
  * static_assert - check integer constant expression at build time

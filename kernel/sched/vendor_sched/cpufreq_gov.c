@@ -79,12 +79,12 @@ extern unsigned long cpu_util_cfs_group_mod(int cpu);
 #define cpu_util_cfs_group_mod cpu_util_cfs
 #endif
 
-//static struct static_key_false sched_uclamp_used;
+unsigned int map_scaling_freq(int cpu, unsigned int freq)
+{
+	struct cpufreq_policy *policy = cpufreq_cpu_get_raw(cpu);
 
-//static inline bool uclamp_is_used(void)
-//{
-//	return static_branch_likely(&sched_uclamp_used);
-//}
+	return policy ? clamp(freq, policy->min, policy->max) : freq;
+}
 
 /************************ Governor internals ***********************/
 #if IS_ENABLED(CONFIG_UCLAMP_STATS)
