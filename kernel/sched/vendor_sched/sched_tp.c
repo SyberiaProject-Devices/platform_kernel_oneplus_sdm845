@@ -13,6 +13,7 @@
 EXPORT_TRACEPOINT_SYMBOL_GPL(sched_cpu_util);
 EXPORT_TRACEPOINT_SYMBOL_GPL(sched_setscheduler_uclamp);
 EXPORT_TRACEPOINT_SYMBOL_GPL(sched_find_energy_efficient_cpu);
+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_select_task_rq_fair);
 EXPORT_TRACEPOINT_SYMBOL_GPL(0);
 
 static int sched_tp_init(void)
