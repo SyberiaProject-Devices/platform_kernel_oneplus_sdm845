@@ -84,7 +84,7 @@ bool nf_queue_entry_get_refs(struct nf_queue_entry *entry)
 {
 	struct nf_hook_state *state = &entry->state;
 
-	if (state->sk && !atomic_inc_not_zero(&state->sk->sk_refcnt))
+	if (state->sk && !refcount_inc_not_zero(&state->sk->sk_refcnt))
 		return false;
 
 	if (state->in)
