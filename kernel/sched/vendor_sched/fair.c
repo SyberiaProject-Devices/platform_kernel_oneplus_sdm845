@@ -84,7 +84,7 @@ static inline unsigned long _task_util_est(struct task_struct *p)
 {
 	struct util_est ue = READ_ONCE(p->se.avg.util_est);
 
-	return (max(ue.ewma, ue.enqueued) | UTIL_AVG_UNCHANGED);
+	return max(ue.ewma, (ue.enqueued & ~UTIL_AVG_UNCHANGED));
 }
 
 static inline unsigned long task_util_est(struct task_struct *p)
@@ -1339,7 +1339,7 @@ void rvh_check_preempt_wakeup_pixel_mod(void *data, struct rq *rq, struct task_s
 void rvh_util_est_update_pixel_mod(void *data, struct cfs_rq *cfs_rq, struct task_struct *p,
 				    bool task_sleep, int *ret)
 {
-	long last_ewma_diff, last_enqueued_diff;
+	long last_ewma_diff;
 	struct util_est ue;
 	int cpu;
 	unsigned long scale_cpu;
@@ -1363,8 +1363,6 @@ void rvh_util_est_update_pixel_mod(void *data, struct cfs_rq *cfs_rq, struct tas
 	ue = p->se.avg.util_est;
 	if (ue.enqueued & UTIL_AVG_UNCHANGED)
 		return;
-
-	last_enqueued_diff = ue.enqueued;
 
 	/*
 	 * Reset EWMA on utilization increases, the moving average is used only
@@ -1398,13 +1396,8 @@ void rvh_util_est_update_pixel_mod(void *data, struct cfs_rq *cfs_rq, struct tas
 	 * already ~1% close to its last activation value.
 	 */
 	last_ewma_diff = ue.enqueued - ue.ewma;
-	last_enqueued_diff -= ue.enqueued;
-	if (within_margin(last_ewma_diff, (SCHED_CAPACITY_SCALE / 100))) {
-		if (!within_margin(last_enqueued_diff, (SCHED_CAPACITY_SCALE / 100)))
-			goto done;
-
+	if (within_margin(last_ewma_diff, (SCHED_CAPACITY_SCALE / 100)))
 		return;
-	}
 
 	/*
 	 * To avoid overestimation of actual task utilization, skip updates if
@@ -1437,6 +1430,7 @@ void rvh_util_est_update_pixel_mod(void *data, struct cfs_rq *cfs_rq, struct tas
 	ue.ewma = min((unsigned long)ue.ewma, uclamp_eff_value(p, UCLAMP_MAX));
 	ue.ewma = min_t(unsigned long, ue.ewma,
 			cap_scale(get_group_throttle(task_group(p)), scale_cpu));
+
 #endif
 done:
 	ue.enqueued |= UTIL_AVG_UNCHANGED;
