@@ -42,6 +42,9 @@
 #define ARM64_HAS_NO_FPSIMD			21
 #define ARM64_HAS_CRC32				22
 
-#define ARM64_NCAPS				23
+#define ARM64_WORKAROUND_1188873		23
+#define ARM64_SPECTRE_BHB			24
+
+#define ARM64_NCAPS				25
 
 #endif /* __ASM_CPUCAPS_H */
