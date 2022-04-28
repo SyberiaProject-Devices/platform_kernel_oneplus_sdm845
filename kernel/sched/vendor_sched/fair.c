@@ -11,6 +11,7 @@
 #include "sched_priv.h"
 #include "systrace.h"
 #include "sched_events.h"
+#include <trace/events/power.h>
 
 #if IS_ENABLED(CONFIG_UCLAMP_STATS)
 extern void update_uclamp_stats(int cpu, u64 time);
@@ -1171,7 +1172,12 @@ void vh_sched_setscheduler_uclamp_pixel_mod(void *data, struct task_struct *tsk,
 					    unsigned int value)
 {
 	trace_sched_setscheduler_uclamp(tsk, clamp_id, value);
-	__ATRACE_INT_PID(tsk->pid, clamp_id  == UCLAMP_MIN ? "UCLAMP_MIN" : "UCLAMP_MAX", value);
+	if (trace_clock_set_rate_enabled()) {
+		char trace_name[32] = {0};
+		scnprintf(trace_name, sizeof(trace_name), "%s_%d",
+			clamp_id  == UCLAMP_MIN ? "UCLAMP_MIN" : "UCLAMP_MAX", tsk->pid);
+		trace_clock_set_rate(trace_name, value, raw_smp_processor_id());
+	}
 }
 
 void vh_dup_task_struct_pixel_mod(void *data, struct task_struct *tsk, struct task_struct *orig)
