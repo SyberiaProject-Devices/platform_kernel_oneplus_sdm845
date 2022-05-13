@@ -201,6 +201,13 @@ VENDOR_GROUP_UINT_ATTRIBUTE(dex2oat, group_throttle, VG_DEX2OAT);
 VENDOR_GROUP_UCLAMP_ATTRIBUTE(dex2oat, uclamp_min, VG_DEX2OAT, UCLAMP_MIN);
 VENDOR_GROUP_UCLAMP_ATTRIBUTE(dex2oat, uclamp_max, VG_DEX2OAT, UCLAMP_MAX);
 
+VENDOR_GROUP_BOOL_ATTRIBUTE(ota, prefer_idle, VG_DEX2OAT);
+VENDOR_GROUP_BOOL_ATTRIBUTE(ota, prefer_high_cap, VG_DEX2OAT);
+VENDOR_GROUP_BOOL_ATTRIBUTE(ota, task_spreading, VG_DEX2OAT);
+VENDOR_GROUP_UINT_ATTRIBUTE(ota, group_throttle, VG_DEX2OAT);
+VENDOR_GROUP_UCLAMP_ATTRIBUTE(ota, uclamp_min, VG_DEX2OAT, UCLAMP_MIN);
+VENDOR_GROUP_UCLAMP_ATTRIBUTE(ota, uclamp_max, VG_DEX2OAT, UCLAMP_MAX);
+
 VENDOR_GROUP_BOOL_ATTRIBUTE(sf, prefer_idle, VG_SF);
 VENDOR_GROUP_BOOL_ATTRIBUTE(sf, prefer_high_cap, VG_SF);
 VENDOR_GROUP_BOOL_ATTRIBUTE(sf, task_spreading, VG_SF);
@@ -626,7 +633,7 @@ SET_VENDOR_GROUP_STORE(ota, VG_OTA);
 SET_VENDOR_GROUP_STORE(sf, VG_SF);
 
 static const char *GRP_NAME[VG_MAX] = {"sys", "ta", "fg", "cam", "cam_power", "bg", "sys_bg",
-				       "nnapi", "rt", "dex2oat", "sf"};
+				       "nnapi", "rt", "dex2oat", "ota", "sf"};
 
 static int dump_task_show(struct seq_file *m, void *v)
 {									      \
@@ -1023,6 +1030,13 @@ static struct attribute *attrs[] = {
 	&dex2oat_group_throttle_attribute.attr,
 	&dex2oat_uclamp_min_attribute.attr,
 	&dex2oat_uclamp_max_attribute.attr,
+	// OTA group attributes
+	&ota_prefer_idle_attribute.attr,
+	&ota_prefer_high_cap_attribute.attr,
+	&ota_task_spreading_attribute.attr,
+	&ota_group_throttle_attribute.attr,
+	&ota_uclamp_min_attribute.attr,
+	&ota_uclamp_max_attribute.attr,
 	// SF group attributes
 	&sf_prefer_idle_attribute.attr,
 	&sf_prefer_high_cap_attribute.attr,
