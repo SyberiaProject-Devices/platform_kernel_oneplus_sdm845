@@ -1105,7 +1105,6 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
-<<<<<<< HEAD
 #endif
 	{
 		.procname	= "bootloader_type",
@@ -1143,15 +1142,6 @@ static struct ctl_table kern_table[] = {
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
-	},
-#endif
-#ifdef CONFIG_SMP
-	{
-		.procname	= "sched_pelt_multiplier",
-		.data		= &sysctl_sched_pelt_multiplier,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= sched_pelt_multiplier,
 	},
 #endif
 #if defined(CONFIG_S390) && defined(CONFIG_SMP)

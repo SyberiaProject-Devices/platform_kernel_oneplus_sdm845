@@ -966,7 +966,6 @@ struct rq {
 	u64 clock;
 	/* Ensure that all clocks are in the same cache line */
 	u64			clock_task ____cacheline_aligned;
-	u64			clock_task_mult;
 	u64			clock_pelt;
 	unsigned long		lost_idle_time;
 
@@ -1165,13 +1164,6 @@ static inline u64 rq_clock_task(struct rq *rq)
 {
 	lockdep_assert_held(&rq->lock);
 	return rq->clock_task;
-}
-
-static inline u64 rq_clock_task_mult(struct rq *rq)
-{
-	lockdep_assert_held(&rq->lock);
-
-	return rq->clock_task_mult;
 }
 
 /**
