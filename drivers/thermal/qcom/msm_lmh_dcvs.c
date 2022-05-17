@@ -25,6 +25,7 @@
 #include <linux/timer.h>
 #include <linux/pm_opp.h>
 #include <linux/cpu_cooling.h>
+#include <linux/cpufreq.h>
 #include <linux/atomic.h>
 #include <linux/regulator/consumer.h>
 
@@ -422,12 +423,12 @@ static int limits_cpu_online(unsigned int online_cpu)
 {
 	struct limits_dcvs_hw *hw = get_dcvsh_hw_from_cpu(online_cpu);
 	unsigned int idx = 0, cpu = 0;
+	struct cpufreq_policy *policy = NULL;
 
 	if (!hw)
 		return 0;
 
 	for_each_cpu(cpu, &hw->core_map) {
-		cpumask_t cpu_mask  = { CPU_BITS_NONE };
 
 		if (cpu != online_cpu) {
 			idx++;
@@ -435,11 +436,16 @@ static int limits_cpu_online(unsigned int online_cpu)
 		} else if (hw->cdev_data[idx].cdev) {
 			return 0;
 		}
-		cpumask_set_cpu(cpu, &cpu_mask);
+		policy = cpufreq_cpu_get(cpu);
+		if (!policy) {
+		    pr_err("no policy for cpu%d\n", cpu);
+		    continue;
+		}
+
 		hw->cdev_data[idx].max_freq = U32_MAX;
 		hw->cdev_data[idx].min_freq = 0;
 		hw->cdev_data[idx].cdev = cpufreq_platform_cooling_register(
-						&cpu_mask, &cd_ops);
+						policy, &cd_ops);
 		if (IS_ERR_OR_NULL(hw->cdev_data[idx].cdev)) {
 			pr_err("CPU:%u cooling device register error:%ld\n",
 				cpu, PTR_ERR(hw->cdev_data[idx].cdev));
